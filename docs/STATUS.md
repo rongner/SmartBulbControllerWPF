@@ -90,6 +90,13 @@ without any cloud dependency.
 - [ ] Installer `.exe` retained as a workflow artifact for 30 days on every tag build
 - [ ] Test results retained as a workflow artifact for 7 days on every run
 
+### Code Signing *(out of scope for portfolio build)*
+- [ ] Both the app executable and installer `.exe` should be signed with a trusted code signing certificate
+- [ ] Unsigned builds will trigger Windows SmartScreen warnings on install — acceptable for portfolio/dev use
+- [ ] For production: obtain an OV or EV certificate from a trusted CA (DigiCert, Sectigo, GlobalSign)
+- [ ] EV certificates require a cloud HSM signing service (e.g. DigiCert KeyLocker, SSL.com eSigner) for CI compatibility — physical USB tokens cannot be used in GitHub Actions
+- [ ] Signing integrated into the `installer` CI job via `signtool.exe` once a certificate is available
+
 ### Installer (Inno Setup)
 - [ ] Inno Setup script at `installer/setup.iss`
 - [ ] Installer handles: install directory, Start Menu shortcut, desktop shortcut (optional), uninstaller
