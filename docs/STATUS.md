@@ -44,6 +44,26 @@ without any cloud dependency.
 - [ ] Dark theme
 - [ ] Device on/off toggle
 - [ ] Connection status indicator
+- [ ] Tray icon — app minimizes to system tray; right-click menu for quick on/off and exit
+- [ ] Configurable launch behavior: start minimized to tray or open main window
+- [ ] Option to launch on Windows startup (registry run key, toggled in settings)
+
+### Settings Persistence
+- [ ] All user settings persisted to a local JSON file in `%AppData%\SmartBulbControllerWPF\settings.json`
+- [ ] Settings include: device credentials, lead time, revert duration, selected team, alert enabled/disabled, launch behavior, startup on login
+- [ ] Settings loaded on startup, saved on change
+
+### Error Handling & Resilience
+- [ ] Device unreachable: show error state in UI, retry connection automatically with backoff
+- [ ] Device command failure: surface error to user, do not crash
+- [ ] ESPN API unavailable: log warning, skip alert gracefully — do not silently fail without any record
+- [ ] Network loss during schedule poll: retry on next poll interval, notify user in UI if multiple consecutive failures
+
+### Logging
+- [ ] Structured logging via `Microsoft.Extensions.Logging` with a rolling file sink (e.g. Serilog)
+- [ ] Log location: `%AppData%\SmartBulbControllerWPF\logs\`
+- [ ] Log key events: app start/stop, device connect/disconnect, alert fired, alert reverted, API fetch success/failure, errors
+- [ ] Log level configurable (default: Information)
 
 ### Project Setup
 - [ ] WPF project scaffolded (.NET 8)
@@ -55,6 +75,7 @@ without any cloud dependency.
 - [ ] `publish` step builds self-contained single-file WPF executable
 - [ ] Inno Setup script (`installer/setup.iss`) packages the published output
 - [ ] Installer handles: install directory, Start Menu shortcut, desktop shortcut (optional), uninstaller
+- [ ] Version sourced from git tag (e.g. `v1.0.0`) via CI environment variable; written into assembly version and installer filename
 - [ ] Versioned installer filename: `SmartBulbControllerWPF-{version}-setup.exe`
 - [ ] GitHub Actions uploads installer as a release asset (or artifact) on each build
 - [ ] Prerequisite detection: check if required .NET Desktop Runtime is already installed
@@ -91,7 +112,7 @@ without any cloud dependency.
 - [ ] Control multiple bulbs simultaneously (groups)
 - [ ] Schedule — turn on/off at a set time
 - [ ] Reactive scene driven by audio input (mic volume → brightness)
-- [ ] Tray icon for quick on/off without opening full UI
+- [ ] Reactive scene driven by audio input (mic volume → brightness)
 
 ---
 
