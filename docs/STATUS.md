@@ -57,6 +57,11 @@ without any cloud dependency.
 - [ ] Installer handles: install directory, Start Menu shortcut, desktop shortcut (optional), uninstaller
 - [ ] Versioned installer filename: `SmartBulbControllerWPF-{version}-setup.exe`
 - [ ] GitHub Actions uploads installer as a release asset (or artifact) on each build
+- [ ] Prerequisite detection: check if required .NET Desktop Runtime is already installed
+- [ ] If missing, download .NET installer from Microsoft at runtime (using Inno Setup 6.1+ `DownloadTemporaryFile`)
+- [ ] Run .NET installer silently; if it requires a reboot, prompt user and reboot
+- [ ] After reboot, installer automatically resumes and completes (via registry run key)
+- [ ] Additional prereqs (if any) follow the same detect → download → install → reboot-if-needed pattern
 
 ---
 
