@@ -60,6 +60,19 @@ without any cloud dependency.
 
 ---
 
+### Team Game Alerts
+- [ ] User selects a favorite NBA team from a dropdown (pre-loaded list with team primary colors)
+- [ ] App fetches the team's schedule via ESPN's public API (`site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/{id}/schedule`)
+- [ ] Background service polls schedule and triggers light change N minutes before tip-off (default: 5 min, configurable)
+- [ ] Lights set to team primary color at configured brightness when alert fires
+- [ ] Configurable lead time (1–60 minutes)
+- [ ] Option to revert lights to previous state after the game ends (or after a fixed duration)
+- [ ] Team color library: at minimum the 30 NBA teams with their primary hex colors
+- [ ] Alert can be enabled/disabled per-team or globally
+- [ ] Works passively in background — no need to have the main window open (pairs with tray icon)
+
+---
+
 ## Optional Enhancements
 
 - [ ] Control multiple bulbs simultaneously (groups)
