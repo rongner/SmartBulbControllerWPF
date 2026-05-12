@@ -11,7 +11,7 @@ without any cloud dependency.
 ## Tech Stack
 
 - **WPF** — Windows desktop app, .NET 8
-- **MVVM** — Prism.Wpf (`DelegateCommand`, `BindableBase`)
+- **MVVM** — CommunityToolkit.Mvvm (`[ObservableProperty]`, `[RelayCommand]` source generators)
 - **TuyaNet** (NuGet) — local LAN Tuya device control, no cloud required
 - **Bulbs** — DAYBETTER A19 E26 RGBCW (Tuya-based), controlled via local key
 
@@ -40,7 +40,7 @@ without any cloud dependency.
 - [ ] Save custom presets by name
 
 ### UI / UX
-- [ ] MVVM architecture — no code-behind logic; ViewModels extend `BindableBase`, commands use `DelegateCommand`
+- [ ] MVVM architecture — no code-behind logic; ViewModels extend `ObservableObject`, commands via `[RelayCommand]` source generator
 - [ ] Dark theme
 - [ ] Device on/off toggle
 - [ ] Connection status indicator
