@@ -44,8 +44,6 @@ without any cloud dependency.
 - [ ] Dark theme
 - [ ] Device on/off toggle
 - [ ] Connection status indicator
-- [ ] Tray icon — app minimizes to system tray; right-click menu for quick on/off and exit
-- [ ] Configurable launch behavior: start minimized to tray or open main window
 - [ ] Option to launch on Windows startup (registry run key, toggled in settings)
 
 ### Settings Persistence
@@ -95,7 +93,7 @@ without any cloud dependency.
 - [ ] Revert lights to previous state after a fixed duration from tip-off (default: 3 hours, configurable)
 - [ ] Team color library: at minimum the 30 NBA teams with their primary hex colors
 - [ ] Alert can be enabled/disabled per-team or globally
-- [ ] Works passively in background — no need to have the main window open (pairs with tray icon)
+- [ ] Game alert background service runs while the app is open; launch on startup (see UI/UX) keeps it active
 
 ### Testing
 - [ ] Separate `SmartBulbControllerWPF.Tests` xUnit project in the solution
@@ -112,7 +110,7 @@ without any cloud dependency.
 - [ ] Control multiple bulbs simultaneously (groups)
 - [ ] Schedule — turn on/off at a set time
 - [ ] Reactive scene driven by audio input (mic volume → brightness)
-- [ ] Reactive scene driven by audio input (mic volume → brightness)
+- [ ] Tray icon — minimize to system tray with quick on/off menu
 
 ---
 
