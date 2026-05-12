@@ -66,7 +66,7 @@ without any cloud dependency.
 - [ ] Background service polls schedule and triggers light change N minutes before tip-off (default: 5 min, configurable)
 - [ ] Lights set to team primary color at configured brightness when alert fires
 - [ ] Configurable lead time (1–60 minutes)
-- [ ] Option to revert lights to previous state after the game ends (or after a fixed duration)
+- [ ] Revert lights to previous state after a fixed duration from tip-off (default: 3 hours, configurable)
 - [ ] Team color library: at minimum the 30 NBA teams with their primary hex colors
 - [ ] Alert can be enabled/disabled per-team or globally
 - [ ] Works passively in background — no need to have the main window open (pairs with tray icon)
