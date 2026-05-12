@@ -67,22 +67,37 @@ without any cloud dependency.
 
 ### Project Setup
 - [ ] WPF project scaffolded (.NET 8)
-- [ ] GitHub repo with CI (build + installer)
+- [ ] GitHub repo with branch protection on `main` — PRs require passing CI before merge
 - [ ] README with setup steps including how to get Tuya local key
 
+### CI/CD Pipeline (GitHub Actions)
+**Triggers:**
+- [ ] Every push and PR to `main` — runs build and test jobs
+- [ ] Git tag push (`v*.*.*`) — additionally runs publish and installer jobs
+
+**Jobs:**
+- [ ] `build` — `dotnet restore` + `dotnet build` (no-restore); fails fast on compile errors
+- [ ] `test` — `dotnet test` with results reported; build fails if any test fails; runs after `build`
+- [ ] `publish` — `dotnet publish` self-contained single-file executable; runs on tag push only
+- [ ] `installer` — runs Inno Setup against published output; produces versioned `.exe`; runs after `publish`
+- [ ] `release` — creates GitHub Release, uploads installer as release asset; runs after `installer`
+
+**Versioning:**
+- [ ] Version sourced from git tag (e.g. `v1.0.0`); written into assembly version and installer filename
+- [ ] Installer filename: `SmartBulbControllerWPF-{version}-setup.exe`
+
+**Artifact retention:**
+- [ ] Installer `.exe` retained as a workflow artifact for 30 days on every tag build
+- [ ] Test results retained as a workflow artifact for 7 days on every run
+
 ### Installer (Inno Setup)
-- [ ] CI pipeline produces a `.exe` installer via Inno Setup
-- [ ] `publish` step builds self-contained single-file WPF executable
-- [ ] Inno Setup script (`installer/setup.iss`) packages the published output
+- [ ] Inno Setup script at `installer/setup.iss`
 - [ ] Installer handles: install directory, Start Menu shortcut, desktop shortcut (optional), uninstaller
-- [ ] Version sourced from git tag (e.g. `v1.0.0`) via CI environment variable; written into assembly version and installer filename
-- [ ] Versioned installer filename: `SmartBulbControllerWPF-{version}-setup.exe`
-- [ ] GitHub Actions uploads installer as a release asset (or artifact) on each build
 - [ ] Prerequisite detection: check if required .NET Desktop Runtime is already installed
-- [ ] If missing, download .NET installer from Microsoft at runtime (using Inno Setup 6.1+ `DownloadTemporaryFile`)
-- [ ] Run .NET installer silently; if it requires a reboot, prompt user and reboot
+- [ ] If missing, download .NET installer from Microsoft at runtime (Inno Setup 6.1+ `DownloadTemporaryFile`)
+- [ ] Run .NET installer silently; if reboot required, prompt user and reboot
 - [ ] After reboot, installer automatically resumes and completes (via registry run key)
-- [ ] Additional prereqs (if any) follow the same detect → download → install → reboot-if-needed pattern
+- [ ] Additional prereqs follow the same detect → download → install → reboot-if-needed pattern
 
 ---
 
