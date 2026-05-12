@@ -12,6 +12,7 @@ without any cloud dependency.
 
 - **WPF** — Windows desktop app, .NET 8
 - **MVVM** — CommunityToolkit.Mvvm (`[ObservableProperty]`, `[RelayCommand]` source generators)
+- **UI Theme** — MahApps.Metro (polished WPF controls, built-in light/dark theme support)
 - **TuyaNet** (NuGet) — local LAN Tuya device control, no cloud required
 - **Bulbs** — DAYBETTER A19 E26 RGBCW (Tuya-based), controlled via local key
 
@@ -43,7 +44,9 @@ without any cloud dependency.
 - [ ] MVVM architecture — no code-behind logic; ViewModels extend `ObservableObject`, commands via `[RelayCommand]` source generator
 - [ ] `ViewModelBase` — extends `ObservableObject`; adds shared properties (`IsBusy`, `ErrorMessage`) and common error-handling logic; all ViewModels inherit from this
 - [ ] `ServiceBase` — base class for services; provides shared logger access and consistent error handling pattern; all services inherit from this
-- [ ] Dark theme
+- [ ] Theme via MahApps.Metro — defaults to Windows system theme (light/dark)
+- [ ] Manual theme override in settings: System / Light / Dark
+- [ ] Theme preference persisted in settings file
 - [ ] Device on/off toggle
 - [ ] Connection status indicator
 - [ ] Option to launch on Windows startup (registry run key, toggled in settings)
