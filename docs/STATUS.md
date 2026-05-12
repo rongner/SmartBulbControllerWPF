@@ -41,6 +41,8 @@ without any cloud dependency.
 
 ### UI / UX
 - [ ] MVVM architecture — no code-behind logic; ViewModels extend `ObservableObject`, commands via `[RelayCommand]` source generator
+- [ ] `ViewModelBase` — extends `ObservableObject`; adds shared properties (`IsBusy`, `ErrorMessage`) and common error-handling logic; all ViewModels inherit from this
+- [ ] `ServiceBase` — base class for services; provides shared logger access and consistent error handling pattern; all services inherit from this
 - [ ] Dark theme
 - [ ] Device on/off toggle
 - [ ] Connection status indicator
