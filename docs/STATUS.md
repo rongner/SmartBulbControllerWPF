@@ -90,6 +90,14 @@ without any cloud dependency.
 - [ ] Installer `.exe` retained as a workflow artifact for 30 days on every tag build
 - [ ] Test results retained as a workflow artifact for 7 days on every run
 
+### Security
+- [ ] Device local key encrypted at rest using Windows DPAPI (`ProtectedData.Protect`) — tied to the current Windows user account, no password required
+- [ ] Credentials decrypted in memory only when needed for a device call; not held in plain text in ViewModel state
+- [ ] Logger must never write the device local key or device ID — sanitize before any log output
+- [ ] All outbound HTTP (ESPN API) uses HTTPS
+- [ ] **Known limitation:** Tuya LAN protocol (port 6668) is unencrypted on the local network — inherent to the protocol, not fixable at the app level; document in README
+- [ ] Settings file (`settings.json`) stores only the DPAPI-encrypted blob, never the raw key
+
 ### Code Signing *(out of scope for portfolio build)*
 - [ ] Both the app executable and installer `.exe` should be signed with a trusted code signing certificate
 - [ ] Unsigned builds will trigger Windows SmartScreen warnings on install — acceptable for portfolio/dev use
