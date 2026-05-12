@@ -47,8 +47,16 @@ without any cloud dependency.
 
 ### Project Setup
 - [ ] WPF project scaffolded (.NET 8)
-- [ ] GitHub repo with CI (build)
+- [ ] GitHub repo with CI (build + installer)
 - [ ] README with setup steps including how to get Tuya local key
+
+### Installer (Inno Setup)
+- [ ] CI pipeline produces a `.exe` installer via Inno Setup
+- [ ] `publish` step builds self-contained single-file WPF executable
+- [ ] Inno Setup script (`installer/setup.iss`) packages the published output
+- [ ] Installer handles: install directory, Start Menu shortcut, desktop shortcut (optional), uninstaller
+- [ ] Versioned installer filename: `SmartBulbControllerWPF-{version}-setup.exe`
+- [ ] GitHub Actions uploads installer as a release asset (or artifact) on each build
 
 ---
 
