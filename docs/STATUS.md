@@ -76,6 +76,14 @@ without any cloud dependency.
 - [ ] Alert can be enabled/disabled per-team or globally
 - [ ] Works passively in background — no need to have the main window open (pairs with tray icon)
 
+### Testing
+- [ ] Separate `SmartBulbControllerWPF.Tests` xUnit project in the solution
+- [ ] **ViewModel tests** — cover all commands, property change notifications, and state transitions using Moq for injected services
+- [ ] **Service tests** — unit tests for schedule polling logic, pre-game timing calculations, and light state snapshot/restore
+- [ ] **Device communication tests** — integration tests for TuyaNet interactions; real device calls wrapped behind an `IDeviceService` interface so they can be mocked in unit tests and exercised against a real bulb in integration tests
+- [ ] **Team alert tests** — verify correct trigger time (tip-off minus lead time), correct revert time (tip-off plus 3 hours), and correct team color lookup
+- [ ] CI runs the test suite on every push (`dotnet test`) and fails the build on any test failure
+
 ---
 
 ## Optional Enhancements
