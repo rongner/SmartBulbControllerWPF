@@ -2,10 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     tags: ['v*.*.*']
   pull_request:
-    branches: [main]
+    branches: [master]
 
 jobs:
   build:
@@ -107,15 +107,16 @@ jobs:
 
       - name: Build installer
         run: >
-          iscc /DAppVersion=${{ steps.version.outputs.VERSION }}
-          /DOutputDir=${{ github.workspace }}\installer\output
+          iscc
+          "/DSourceDir=${{ github.workspace }}\publish"
+          "/DOutputDir=${{ github.workspace }}\installer\output"
           installer\setup.iss
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
           name: installer
-          path: installer/output/*.exe
+          path: installer\output\*.exe
           retention-days: 30
 
   release:
