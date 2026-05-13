@@ -43,6 +43,7 @@ public partial class App : Application
         services.AddHttpClient();
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<IDeviceService, DeviceService>();
+        services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<MainWindow>();
         services.AddSingleton<MainViewModel>();
     }
