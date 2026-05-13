@@ -95,7 +95,7 @@ The app polls the ESPN schedule every 5 minutes. No API key is required.
 | Device protocol | TuyaNet 1.0.3 (local LAN, AES-128) |
 | Settings | JSON + DPAPI encryption for the local key |
 | Logging | Serilog → `%AppData%\SmartBulbControllerWPF\logs\app-YYYY-MM-DD.log` |
-| Tests | xUnit + Moq (67 tests) |
+| Tests | xUnit + Moq (105 tests) |
 | Installer | Inno Setup 6.3 |
 
 ---

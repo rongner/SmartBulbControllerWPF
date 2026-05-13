@@ -16,6 +16,7 @@ public class MainViewModelTests
     private readonly Mock<IPresetService>   _presetSvc   = new();
     private readonly Mock<IThemeService>    _themeSvc    = new();
     private readonly Mock<IAlertService>    _alertSvc    = new();
+    private readonly Mock<ISceneService>    _sceneSvc    = new();
 
     private MainViewModel CreateVm()
     {
@@ -30,6 +31,7 @@ public class MainViewModelTests
             _presetSvc.Object,
             _themeSvc.Object,
             _alertSvc.Object,
+            _sceneSvc.Object,
             new StartupService(NullLogger<StartupService>.Instance),
             NullLogger<MainViewModel>.Instance);
     }

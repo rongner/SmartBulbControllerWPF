@@ -6,9 +6,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:SmartBulbControllerWPF.ViewModels"
         xmlns:converters="clr-namespace:SmartBulbControllerWPF.Converters"
+        xmlns:views="clr-namespace:SmartBulbControllerWPF.Views"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
-        Title="Smart Bulb Controller" Height="540" Width="820"
+        Title="Smart Bulb Controller" Height="640" Width="820"
         WindowStartupLocation="CenterScreen">
 
     <!-- Menu bar -->
@@ -251,7 +252,7 @@
                                             IsSnapToTickEnabled="True" />
                                 </DockPanel>
 
-                                <!-- RGB + hex (color mode) -->
+                                <!-- RGB + hex + color wheel (color mode) -->
                                 <StackPanel>
                                     <StackPanel.Style>
                                         <Style TargetType="StackPanel">
@@ -263,6 +264,13 @@
                                             </Style.Triggers>
                                         </Style>
                                     </StackPanel.Style>
+
+                                    <!-- Color wheel -->
+                                    <views:ColorWheelPicker
+                                        HorizontalAlignment="Center"
+                                        Margin="0 4 0 12"
+                                        Hue="{Binding ColorHue, Mode=TwoWay}"
+                                        Saturation="{Binding ColorSaturation, Mode=TwoWay}" />
 
                                     <DockPanel Margin="0 0 0 8">
                                         <TextBlock DockPanel.Dock="Left" Text="Red"
@@ -314,6 +322,42 @@
                                         <TextBox Text="{Binding HexColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                  mah:TextBoxHelper.Watermark="#RRGGBB"
                                                  FontFamily="Consolas" />
+                                    </DockPanel>
+                                </StackPanel>
+
+                                <!-- Animated scenes -->
+                                <Separator Margin="0 12 0 8" />
+                                <TextBlock Text="ANIMATED SCENES"
+                                           FontSize="11" FontWeight="SemiBold" Opacity="0.6"
+                                           Margin="0 0 0 8" />
+                                <StackPanel IsEnabled="{Binding IsConnected}">
+                                    <UniformGrid Columns="4" Margin="0 0 0 8"
+                                                 xmlns:models="clr-namespace:SmartBulbControllerWPF.Models">
+                                        <ToggleButton Content="Color Cycle" Margin="0 0 4 0" Padding="6 4"
+                                                      IsChecked="{Binding IsColorCycleActive, Mode=OneWay}"
+                                                      Command="{Binding SetSceneCommand}"
+                                                      CommandParameter="{x:Static models:SceneType.ColorCycle}" />
+                                        <ToggleButton Content="Pulse" Margin="0 0 4 0" Padding="6 4"
+                                                      IsChecked="{Binding IsPulseActive, Mode=OneWay}"
+                                                      Command="{Binding SetSceneCommand}"
+                                                      CommandParameter="{x:Static models:SceneType.Pulse}" />
+                                        <ToggleButton Content="Strobe" Margin="0 0 4 0" Padding="6 4"
+                                                      IsChecked="{Binding IsStrobeActive, Mode=OneWay}"
+                                                      Command="{Binding SetSceneCommand}"
+                                                      CommandParameter="{x:Static models:SceneType.Strobe}" />
+                                        <ToggleButton Content="Stop" Padding="6 4"
+                                                      Command="{Binding SetSceneCommand}"
+                                                      CommandParameter="{x:Static models:SceneType.None}" />
+                                    </UniformGrid>
+                                    <DockPanel>
+                                        <TextBlock DockPanel.Dock="Left" Text="Step Delay"
+                                                   VerticalAlignment="Center" Width="120" />
+                                        <TextBlock DockPanel.Dock="Right"
+                                                   Text="{Binding SceneStepMs, StringFormat={}{0} ms}"
+                                                   VerticalAlignment="Center" Width="50" TextAlignment="Right" />
+                                        <Slider Value="{Binding SceneStepMs, Mode=TwoWay}"
+                                                Minimum="30" Maximum="400"
+                                                TickFrequency="10" IsSnapToTickEnabled="True" />
                                     </DockPanel>
                                 </StackPanel>
 

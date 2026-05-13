@@ -19,13 +19,14 @@ public partial class MainViewModel : ViewModelBase
     private readonly IPresetService    _presetService;
     private readonly IThemeService     _themeService;
     private readonly IAlertService     _alertService;
-    private readonly StartupService   _startupService;
+    private readonly ISceneService     _sceneService;
+    private readonly StartupService    _startupService;
 
     private readonly Debouncer _brightDebounce    = new(250);
     private readonly Debouncer _colorTempDebounce = new(250);
     private readonly Debouncer _colorDebounce     = new(250);
 
-    // Suppresses device calls during batch state loads and prevents RGB↔Hex feedback loops
+    // Suppresses device calls during batch state loads and prevents RGB↔Hex↔Wheel feedback loops
     private bool _suppressChanges;
 
     // ── App version ───────────────────────────────────────────────────────────
@@ -124,6 +125,7 @@ public partial class MainViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(DisconnectCommand))]
+    [NotifyCanExecuteChangedFor(nameof(SetSceneCommand))]
     private bool _isConnected;
 
     [ObservableProperty]
@@ -137,13 +139,13 @@ public partial class MainViewModel : ViewModelBase
     // ── Light controls ────────────────────────────────────────────────────────
 
     [ObservableProperty]
-    private int _brightness = 100;        // 0–100 %
+    private int _brightness = 100;
 
     [ObservableProperty]
-    private int _colorTemperature = 50;   // 0–100 % (0 = warm, 100 = cool)
+    private int _colorTemperature = 50;
 
     [ObservableProperty]
-    private bool _isWhiteMode = true;     // true = white/temp, false = colour
+    private bool _isWhiteMode = true;
 
     [ObservableProperty]
     private byte _colorRed = 255;
@@ -157,6 +159,66 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     private string _hexColor = "#FFFFFF";
 
+    // ── Color wheel (HSV hue + saturation) ───────────────────────────────────
+
+    [ObservableProperty]
+    private double _colorHue;
+
+    [ObservableProperty]
+    private double _colorSaturation;
+
+    partial void OnColorHueChanged(double value)        => OnWheelChanged();
+    partial void OnColorSaturationChanged(double value) => OnWheelChanged();
+
+    private void OnWheelChanged()
+    {
+        if (_suppressChanges) return;
+        var (r, g, b) = ColorHelper.HsvToRgb(ColorHue, ColorSaturation, 1.0);
+        _suppressChanges = true;
+        ColorRed         = r;
+        ColorGreen       = g;
+        ColorBlue        = b;
+        HexColor         = $"#{r:X2}{g:X2}{b:X2}";
+        _suppressChanges = false;
+
+        if (!IsConnected) return;
+        _colorDebounce.Schedule(() => _deviceService.SetColorAsync(r, g, b));
+    }
+
+    // ── Animated scenes ───────────────────────────────────────────────────────
+
+    [ObservableProperty]
+    private SceneType _activeScene = SceneType.None;
+
+    [ObservableProperty]
+    private int _sceneStepMs = 80;
+
+    public bool IsColorCycleActive => ActiveScene == SceneType.ColorCycle;
+    public bool IsPulseActive      => ActiveScene == SceneType.Pulse;
+    public bool IsStrobeActive     => ActiveScene == SceneType.Strobe;
+
+    partial void OnActiveSceneChanged(SceneType value)
+    {
+        OnPropertyChanged(nameof(IsColorCycleActive));
+        OnPropertyChanged(nameof(IsPulseActive));
+        OnPropertyChanged(nameof(IsStrobeActive));
+    }
+
+    [RelayCommand(CanExecute = nameof(CanSetScene))]
+    private void SetScene(SceneType scene)
+    {
+        if (scene == ActiveScene || scene == SceneType.None)
+        {
+            _sceneService.Stop();
+            ActiveScene = SceneType.None;
+            return;
+        }
+        _sceneService.Start(scene, ColorRed, ColorGreen, ColorBlue, SceneStepMs);
+        ActiveScene = scene;
+    }
+
+    private bool CanSetScene() => IsConnected;
+
     // ── Constructor ───────────────────────────────────────────────────────────
 
     public MainViewModel(
@@ -166,6 +228,7 @@ public partial class MainViewModel : ViewModelBase
         IPresetService   presetService,
         IThemeService    themeService,
         IAlertService    alertService,
+        ISceneService    sceneService,
         StartupService   startupService,
         ILogger<MainViewModel> logger) : base(logger)
     {
@@ -175,12 +238,12 @@ public partial class MainViewModel : ViewModelBase
         _presetService   = presetService;
         _themeService    = themeService;
         _alertService    = alertService;
+        _sceneService    = sceneService;
         _startupService  = startupService;
 
         foreach (var p in presetService.Presets)
             Presets.Add(p);
 
-        // Load alert settings from persisted config
         var cfg = settingsService.Current;
         _suppressChanges = true;
         AlertEnabled     = cfg.AlertEnabled;
@@ -254,6 +317,8 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand(CanExecute = nameof(CanDisconnect))]
     private void Disconnect()
     {
+        _sceneService.Stop();
+        ActiveScene = SceneType.None;
         _deviceService.Disconnect();
         IsConnected = false;
         LoadStateQuiet(new DeviceState());
@@ -324,12 +389,13 @@ public partial class MainViewModel : ViewModelBase
     {
         if (_suppressChanges) return;
 
+        _suppressChanges = true;
         if (!fromHex)
-        {
-            _suppressChanges = true;
             HexColor = $"#{ColorRed:X2}{ColorGreen:X2}{ColorBlue:X2}";
-            _suppressChanges = false;
-        }
+        var (h, s, _) = ColorHelper.RgbToHsv(ColorRed, ColorGreen, ColorBlue);
+        ColorHue        = h;
+        ColorSaturation = s;
+        _suppressChanges = false;
 
         if (!IsConnected) return;
         var (r, g, b) = (ColorRed, ColorGreen, ColorBlue);
@@ -348,6 +414,9 @@ public partial class MainViewModel : ViewModelBase
         ColorGreen       = state.Color.G;
         ColorBlue        = state.Color.B;
         HexColor         = $"#{state.Color.R:X2}{state.Color.G:X2}{state.Color.B:X2}";
+        var (h, s, _) = ColorHelper.RgbToHsv(state.Color.R, state.Color.G, state.Color.B);
+        ColorHue        = h;
+        ColorSaturation = s;
         IsWhiteMode      = state.Mode != "colour";
         _suppressChanges = false;
     }
@@ -381,6 +450,9 @@ public partial class MainViewModel : ViewModelBase
             ColorGreen       = preset.G;
             ColorBlue        = preset.B;
             HexColor         = $"#{preset.R:X2}{preset.G:X2}{preset.B:X2}";
+            var (h, s, _) = ColorHelper.RgbToHsv(preset.R, preset.G, preset.B);
+            ColorHue        = h;
+            ColorSaturation = s;
             _suppressChanges = false;
 
             if (preset.IsWhiteMode)

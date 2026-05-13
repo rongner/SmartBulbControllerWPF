@@ -15,6 +15,7 @@ public class CommandIntegrationTests
     private readonly Mock<IDialogService>   _dialogSvc   = new();
     private readonly Mock<IPresetService>   _presetSvc   = new();
     private readonly Mock<IAlertService>    _alertSvc    = new();
+    private readonly Mock<ISceneService>    _sceneSvc    = new();
     private AppSettings _appSettings = new();
 
     private MainViewModel CreateVm()
@@ -28,6 +29,7 @@ public class CommandIntegrationTests
             _presetSvc.Object,
             new Mock<IThemeService>().Object,
             _alertSvc.Object,
+            _sceneSvc.Object,
             new StartupService(NullLogger<StartupService>.Instance),
             NullLogger<MainViewModel>.Instance);
     }

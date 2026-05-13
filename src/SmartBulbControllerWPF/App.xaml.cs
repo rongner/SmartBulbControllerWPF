@@ -10,6 +10,7 @@ using Serilog;
 using SmartBulbControllerWPF.Interfaces;
 using SmartBulbControllerWPF.Services;
 using SmartBulbControllerWPF.ViewModels;
+using SmartBulbControllerWPF.Views;
 
 namespace SmartBulbControllerWPF;
 
@@ -112,6 +113,7 @@ public partial class App : Application
         services.AddSingleton<IThemeService, ThemeService>();
         services.AddSingleton<EspnScheduleService>();
         services.AddSingleton<IAlertService, AlertService>();
+        services.AddSingleton<ISceneService, SceneService>();
         services.AddSingleton<StartupService>();
         services.AddSingleton<MainWindow>();
         services.AddSingleton<MainViewModel>();
