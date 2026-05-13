@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using SmartBulbControllerWPF.Interfaces;
 using SmartBulbControllerWPF.Models;
+using SmartBulbControllerWPF.Services;
 using SmartBulbControllerWPF.ViewModels;
 
 namespace SmartBulbControllerWPF.Tests.ViewModels;
@@ -27,6 +28,7 @@ public class MainViewModelTests
             _presetSvc.Object,
             _themeSvc.Object,
             _alertSvc.Object,
+            new StartupService(NullLogger<StartupService>.Instance),
             NullLogger<MainViewModel>.Instance);
     }
 

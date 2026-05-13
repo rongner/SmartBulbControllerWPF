@@ -365,6 +365,19 @@
                                 IsSnapToTickEnabled="True" />
                     </DockPanel>
 
+                    <!-- General Settings -->
+                    <Separator Margin="0 16 0 12" />
+                    <TextBlock Text="GENERAL"
+                               FontSize="11" FontWeight="SemiBold" Opacity="0.6"
+                               Margin="0 0 0 10" />
+
+                    <DockPanel Margin="0 0 0 8">
+                        <TextBlock DockPanel.Dock="Left" Text="Launch on Startup"
+                                   VerticalAlignment="Center" Width="120" />
+                        <mah:ToggleSwitch IsOn="{Binding LaunchOnStartup, Mode=TwoWay}"
+                                          OnContent="On" OffContent="Off" />
+                    </DockPanel>
+
                     <!-- Error message -->
                     <Border Background="#2d0f10" BorderBrush="#da3633" BorderThickness="1"
                             CornerRadius="4" Padding="10 6" Margin="0 16 0 0"

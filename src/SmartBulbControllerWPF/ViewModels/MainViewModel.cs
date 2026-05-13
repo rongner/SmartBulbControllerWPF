@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using SmartBulbControllerWPF.Helpers;
 using SmartBulbControllerWPF.Interfaces;
 using SmartBulbControllerWPF.Models;
+using SmartBulbControllerWPF.Services;
 
 namespace SmartBulbControllerWPF.ViewModels;
 
@@ -18,6 +19,7 @@ public partial class MainViewModel : ViewModelBase
     private readonly IPresetService    _presetService;
     private readonly IThemeService     _themeService;
     private readonly IAlertService     _alertService;
+    private readonly StartupService   _startupService;
 
     private readonly Debouncer _brightDebounce    = new(250);
     private readonly Debouncer _colorTempDebounce = new(250);
@@ -25,6 +27,19 @@ public partial class MainViewModel : ViewModelBase
 
     // Suppresses device calls during batch state loads and prevents RGB↔Hex feedback loops
     private bool _suppressChanges;
+
+    // ── Startup on login ─────────────────────────────────────────────────────
+
+    [ObservableProperty]
+    private bool _launchOnStartup;
+
+    partial void OnLaunchOnStartupChanged(bool value)
+    {
+        if (_suppressChanges) return;
+        _startupService.SetLaunchOnStartup(value);
+        _settingsService.Current.LaunchOnStartup = value;
+        _settingsService.Save();
+    }
 
     // ── NBA alert settings ────────────────────────────────────────────────────
 
@@ -135,6 +150,7 @@ public partial class MainViewModel : ViewModelBase
         IPresetService   presetService,
         IThemeService    themeService,
         IAlertService    alertService,
+        StartupService   startupService,
         ILogger<MainViewModel> logger) : base(logger)
     {
         _deviceService   = deviceService;
@@ -143,6 +159,7 @@ public partial class MainViewModel : ViewModelBase
         _presetService   = presetService;
         _themeService    = themeService;
         _alertService    = alertService;
+        _startupService  = startupService;
 
         foreach (var p in presetService.Presets)
             Presets.Add(p);
@@ -159,6 +176,7 @@ public partial class MainViewModel : ViewModelBase
             : null;
         _suppressChanges = false;
 
+        LaunchOnStartup = startupService.IsLaunchOnStartupEnabled();
         if (cfg.AlertEnabled) alertService.Start();
     }
 

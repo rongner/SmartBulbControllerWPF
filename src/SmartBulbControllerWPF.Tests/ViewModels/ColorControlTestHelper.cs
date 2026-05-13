@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using SmartBulbControllerWPF.Interfaces;
 using SmartBulbControllerWPF.Models;
+using SmartBulbControllerWPF.Services;
 using SmartBulbControllerWPF.ViewModels;
 
 namespace SmartBulbControllerWPF.Tests.ViewModels;
@@ -23,6 +24,7 @@ internal static class ColorControlTestHelper
             presets.Object,
             new Mock<IThemeService>().Object,
             new Mock<IAlertService>().Object,
+            new StartupService(NullLogger<StartupService>.Instance),
             NullLogger<MainViewModel>.Instance);
     }
 }
