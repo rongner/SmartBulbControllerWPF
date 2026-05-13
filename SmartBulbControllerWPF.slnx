@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SmartBulbControllerWPF.Tests/SmartBulbControllerWPF.Tests.csproj" />
+    <Project Path="src/SmartBulbControllerWPF/SmartBulbControllerWPF.csproj" />
+  </Folder>
+</Solution>

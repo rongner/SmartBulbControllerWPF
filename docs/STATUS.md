@@ -10,7 +10,7 @@ without any cloud dependency.
 
 ## Tech Stack
 
-- **WPF** — Windows desktop app, .NET 8
+- **WPF** — Windows desktop app, .NET 10
 - **MVVM** — CommunityToolkit.Mvvm (`[ObservableProperty]`, `[RelayCommand]` source generators)
 - **UI Theme** — MahApps.Metro (polished WPF controls, built-in light/dark theme support)
 - **TuyaNet** (NuGet) — local LAN Tuya device control, no cloud required
@@ -69,7 +69,7 @@ without any cloud dependency.
 - [ ] Log level configurable (default: Information)
 
 ### Project Setup
-- [ ] WPF project scaffolded (.NET 8)
+- [x] WPF project scaffolded (.NET 10)
 - [ ] GitHub repo with branch protection on `main` — PRs require passing CI before merge
 - [ ] README with setup steps including how to get Tuya local key
 
