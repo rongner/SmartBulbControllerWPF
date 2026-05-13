@@ -5,9 +5,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:SmartBulbControllerWPF.ViewModels"
+        xmlns:converters="clr-namespace:SmartBulbControllerWPF.Converters"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
-        Title="Smart Bulb Controller" Height="600" Width="900"
+        Title="Smart Bulb Controller" Height="660" Width="900"
         WindowStartupLocation="CenterScreen">
 
     <!-- Menu bar -->
@@ -74,69 +75,187 @@
             <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" />
 
             <!-- Right: control panel -->
-            <Grid Grid.Column="2" Margin="16 12">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
+            <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="16 12">
 
-                <!-- Connection status + actions -->
-                <DockPanel Grid.Row="0" Margin="0 0 0 16">
-                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                        <Button Content="Connect"
-                                Command="{Binding ConnectCommand}"
-                                Style="{StaticResource MahApps.Styles.Button.Square.Accent}"
-                                Margin="0 0 8 0" />
-                        <Button Content="Disconnect"
-                                Command="{Binding DisconnectCommand}"
-                                Style="{StaticResource MahApps.Styles.Button}" />
+                    <!-- Connection status + actions -->
+                    <DockPanel Margin="0 0 0 16">
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Button Content="Connect"
+                                    Command="{Binding ConnectCommand}"
+                                    Style="{StaticResource MahApps.Styles.Button.Square.Accent}"
+                                    Margin="0 0 8 0" />
+                            <Button Content="Disconnect"
+                                    Command="{Binding DisconnectCommand}"
+                                    Style="{StaticResource MahApps.Styles.Button}" />
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Ellipse Width="10" Height="10" Margin="0 0 8 0">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill" Value="#da3633" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsConnected}" Value="True">
+                                                <Setter Property="Fill" Value="#3fb950" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+                            <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <!-- Power toggle -->
+                    <StackPanel Orientation="Horizontal" Margin="0 0 0 16">
+                        <TextBlock Text="Power" VerticalAlignment="Center" FontSize="14"
+                                   Margin="0 0 16 0" />
+                        <mah:ToggleSwitch IsOn="{Binding IsOn, Mode=TwoWay}"
+                                          IsEnabled="{Binding IsConnected}"
+                                          OnContent="On" OffContent="Off" />
                     </StackPanel>
 
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <Ellipse Width="10" Height="10" Margin="0 0 8 0">
-                            <Ellipse.Style>
-                                <Style TargetType="Ellipse">
-                                    <Setter Property="Fill" Value="#da3633" />
+                    <!-- Light controls (disabled when not connected) -->
+                    <StackPanel IsEnabled="{Binding IsConnected}">
+
+                        <!-- Mode toggle -->
+                        <DockPanel Margin="0 0 0 16">
+                            <TextBlock Text="Mode" VerticalAlignment="Center" Width="120"
+                                       FontWeight="SemiBold" />
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton Content="White" IsChecked="{Binding IsWhiteMode}"
+                                             GroupName="LightMode" Margin="0 0 16 0" />
+                                <RadioButton Content="Color" GroupName="LightMode"
+                                             IsChecked="{Binding IsWhiteMode, Mode=TwoWay,
+                                                 Converter={StaticResource InverseBoolConverter}}" />
+                            </StackPanel>
+                        </DockPanel>
+
+                        <!-- Brightness (always visible) -->
+                        <DockPanel Margin="0 0 0 12">
+                            <TextBlock DockPanel.Dock="Left" Text="Brightness"
+                                       VerticalAlignment="Center" Width="120" />
+                            <TextBlock DockPanel.Dock="Right"
+                                       Text="{Binding Brightness, StringFormat={}{0}%}"
+                                       VerticalAlignment="Center" Width="40"
+                                       TextAlignment="Right" />
+                            <Slider Value="{Binding Brightness, Mode=TwoWay}"
+                                    Minimum="0" Maximum="100" TickFrequency="1"
+                                    IsSnapToTickEnabled="True" />
+                        </DockPanel>
+
+                        <!-- White mode: color temperature -->
+                        <DockPanel Margin="0 0 0 12"
+                                   Visibility="{Binding IsWhiteMode, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <TextBlock DockPanel.Dock="Left" Text="Color Temp"
+                                       VerticalAlignment="Center" Width="120" />
+                            <TextBlock DockPanel.Dock="Right"
+                                       Text="{Binding ColorTemperature, StringFormat={}{0}%}"
+                                       VerticalAlignment="Center" Width="40"
+                                       TextAlignment="Right" />
+                            <Slider Value="{Binding ColorTemperature, Mode=TwoWay}"
+                                    Minimum="0" Maximum="100" TickFrequency="1"
+                                    IsSnapToTickEnabled="True" />
+                        </DockPanel>
+
+                        <!-- Color mode: RGB sliders + hex -->
+                        <StackPanel Margin="0 0 0 0">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed" />
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsConnected}" Value="True">
-                                            <Setter Property="Fill" Value="#3fb950" />
+                                        <DataTrigger Binding="{Binding IsWhiteMode}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
-                            </Ellipse.Style>
-                        </Ellipse>
-                        <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" />
+                            </StackPanel.Style>
+
+                            <!-- Red -->
+                            <DockPanel Margin="0 0 0 8">
+                                <TextBlock DockPanel.Dock="Left" Text="Red"
+                                           VerticalAlignment="Center" Width="120" Foreground="#f85149" />
+                                <TextBlock DockPanel.Dock="Right"
+                                           Text="{Binding ColorRed}"
+                                           VerticalAlignment="Center" Width="40"
+                                           TextAlignment="Right" />
+                                <Slider Value="{Binding ColorRed, Mode=TwoWay}"
+                                        Minimum="0" Maximum="255" TickFrequency="1"
+                                        IsSnapToTickEnabled="True" />
+                            </DockPanel>
+
+                            <!-- Green -->
+                            <DockPanel Margin="0 0 0 8">
+                                <TextBlock DockPanel.Dock="Left" Text="Green"
+                                           VerticalAlignment="Center" Width="120" Foreground="#3fb950" />
+                                <TextBlock DockPanel.Dock="Right"
+                                           Text="{Binding ColorGreen}"
+                                           VerticalAlignment="Center" Width="40"
+                                           TextAlignment="Right" />
+                                <Slider Value="{Binding ColorGreen, Mode=TwoWay}"
+                                        Minimum="0" Maximum="255" TickFrequency="1"
+                                        IsSnapToTickEnabled="True" />
+                            </DockPanel>
+
+                            <!-- Blue -->
+                            <DockPanel Margin="0 0 0 8">
+                                <TextBlock DockPanel.Dock="Left" Text="Blue"
+                                           VerticalAlignment="Center" Width="120" Foreground="#58a6ff" />
+                                <TextBlock DockPanel.Dock="Right"
+                                           Text="{Binding ColorBlue}"
+                                           VerticalAlignment="Center" Width="40"
+                                           TextAlignment="Right" />
+                                <Slider Value="{Binding ColorBlue, Mode=TwoWay}"
+                                        Minimum="0" Maximum="255" TickFrequency="1"
+                                        IsSnapToTickEnabled="True" />
+                            </DockPanel>
+
+                            <!-- Hex input + color preview -->
+                            <DockPanel Margin="0 0 0 0">
+                                <TextBlock DockPanel.Dock="Left" Text="Hex"
+                                           VerticalAlignment="Center" Width="120" />
+                                <Border DockPanel.Dock="Right" Width="32" Height="24"
+                                        CornerRadius="3" Margin="8 0 0 0">
+                                    <Border.Background>
+                                        <SolidColorBrush>
+                                            <SolidColorBrush.Color>
+                                                <MultiBinding>
+                                                    <MultiBinding.Converter>
+                                                        <converters:RgbToColorConverter />
+                                                    </MultiBinding.Converter>
+                                                    <Binding Path="ColorRed" />
+                                                    <Binding Path="ColorGreen" />
+                                                    <Binding Path="ColorBlue" />
+                                                </MultiBinding>
+                                            </SolidColorBrush.Color>
+                                        </SolidColorBrush>
+                                    </Border.Background>
+                                </Border>
+                                <TextBox Text="{Binding HexColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         mah:TextBoxHelper.Watermark="#RRGGBB"
+                                         FontFamily="Consolas" />
+                            </DockPanel>
+                        </StackPanel>
+
                     </StackPanel>
-                </DockPanel>
 
-                <!-- Power toggle -->
-                <StackPanel Grid.Row="1" Orientation="Horizontal"
-                            Margin="0 0 0 16">
-                    <TextBlock Text="Power" VerticalAlignment="Center" FontSize="14"
-                               Margin="0 0 16 0" />
-                    <mah:ToggleSwitch IsOn="{Binding IsOn, Mode=TwoWay}"
-                                      IsEnabled="{Binding IsConnected}"
-                                      OnContent="On" OffContent="Off" />
+                    <!-- Error message -->
+                    <Border Background="#2d0f10" BorderBrush="#da3633" BorderThickness="1"
+                            CornerRadius="4" Padding="10 6" Margin="0 16 0 0"
+                            Visibility="{Binding ErrorMessage, Converter={StaticResource NullToCollapsedConverter}}">
+                        <TextBlock Text="{Binding ErrorMessage}" Foreground="#f85149"
+                                   TextWrapping="Wrap" FontSize="12" />
+                    </Border>
+
+                    <!-- Busy indicator -->
+                    <mah:ProgressRing Width="40" Height="40"
+                                      HorizontalAlignment="Left" Margin="0 12 0 0"
+                                      IsActive="{Binding IsBusy}"
+                                      Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}" />
+
                 </StackPanel>
-
-                <!-- Error message -->
-                <Border Grid.Row="2"
-                        Background="#2d0f10" BorderBrush="#da3633" BorderThickness="1"
-                        CornerRadius="4" Padding="10 6" Margin="0 0 0 8"
-                        Visibility="{Binding ErrorMessage, Converter={StaticResource NullToCollapsedConverter}}">
-                    <TextBlock Text="{Binding ErrorMessage}" Foreground="#f85149"
-                               TextWrapping="Wrap" FontSize="12" />
-                </Border>
-
-                <!-- Busy indicator -->
-                <mah:ProgressRing Grid.Row="3"
-                                  Width="40" Height="40"
-                                  HorizontalAlignment="Left" VerticalAlignment="Top"
-                                  IsActive="{Binding IsBusy}"
-                                  Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}" />
-            </Grid>
+            </ScrollViewer>
         </Grid>
 
         <!-- Status bar -->
