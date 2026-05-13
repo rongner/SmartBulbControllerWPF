@@ -38,6 +38,10 @@ public partial class App : Application
         ConfigureServices(services);
         _serviceProvider = services.BuildServiceProvider();
 
+        DispatcherUnhandledException                    += OnDispatcherUnhandledException;
+        AppDomain.CurrentDomain.UnhandledException      += OnDomainUnhandledException;
+        TaskScheduler.UnobservedTaskException           += OnUnobservedTaskException;
+
         Log.Information("SmartBulbControllerWPF starting");
 
         _serviceProvider.GetRequiredService<IThemeService>().ApplySaved();
@@ -111,6 +115,31 @@ public partial class App : Application
         services.AddSingleton<StartupService>();
         services.AddSingleton<MainWindow>();
         services.AddSingleton<MainViewModel>();
+    }
+
+    private void OnDispatcherUnhandledException(object sender,
+        System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+    {
+        Log.Fatal(e.Exception, "Unhandled UI exception");
+        MessageBox.Show(
+            $"An unexpected error occurred:\n{e.Exception.Message}",
+            "Smart Bulb Controller",
+            MessageBoxButton.OK,
+            MessageBoxImage.Error);
+        e.Handled = true;
+    }
+
+    private static void OnDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+        var ex = e.ExceptionObject as Exception;
+        Log.Fatal(ex, "Unhandled domain exception (terminating={IsTerminating})", e.IsTerminating);
+        Log.CloseAndFlush();
+    }
+
+    private static void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+    {
+        Log.Error(e.Exception, "Unobserved task exception");
+        e.SetObserved();
     }
 
     protected override void OnExit(ExitEventArgs e)
