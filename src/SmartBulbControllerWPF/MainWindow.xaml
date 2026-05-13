@@ -311,6 +311,60 @@
 
                     </StackPanel>
 
+                    <!-- NBA Game Alerts -->
+                    <Separator Margin="0 16 0 12" />
+                    <TextBlock Text="NBA GAME ALERTS"
+                               FontSize="11" FontWeight="SemiBold" Opacity="0.6"
+                               Margin="0 0 0 10" />
+
+                    <DockPanel Margin="0 0 0 10">
+                        <TextBlock DockPanel.Dock="Left" Text="Enable Alerts"
+                                   VerticalAlignment="Center" Width="120" />
+                        <mah:ToggleSwitch IsOn="{Binding AlertEnabled, Mode=TwoWay}"
+                                          OnContent="On" OffContent="Off" />
+                    </DockPanel>
+
+                    <DockPanel Margin="0 0 0 8">
+                        <TextBlock DockPanel.Dock="Left" Text="Team"
+                                   VerticalAlignment="Center" Width="120" />
+                        <ComboBox ItemsSource="{Binding NbaTeams}"
+                                  SelectedItem="{Binding SelectedNbaTeam, Mode=TwoWay}"
+                                  DisplayMemberPath="Name" />
+                    </DockPanel>
+
+                    <DockPanel Margin="0 0 0 8">
+                        <TextBlock DockPanel.Dock="Left" Text="Alert Before (min)"
+                                   VerticalAlignment="Center" Width="120" />
+                        <TextBlock DockPanel.Dock="Right"
+                                   Text="{Binding AlertLeadMinutes, StringFormat={}{0} min}"
+                                   VerticalAlignment="Center" Width="50" TextAlignment="Right" />
+                        <Slider Value="{Binding AlertLeadMinutes, Mode=TwoWay}"
+                                Minimum="1" Maximum="60" TickFrequency="1"
+                                IsSnapToTickEnabled="True" />
+                    </DockPanel>
+
+                    <DockPanel Margin="0 0 0 8">
+                        <TextBlock DockPanel.Dock="Left" Text="Revert After (hr)"
+                                   VerticalAlignment="Center" Width="120" />
+                        <TextBlock DockPanel.Dock="Right"
+                                   Text="{Binding AlertRevertHours, StringFormat={}{0} hr}"
+                                   VerticalAlignment="Center" Width="50" TextAlignment="Right" />
+                        <Slider Value="{Binding AlertRevertHours, Mode=TwoWay}"
+                                Minimum="1" Maximum="6" TickFrequency="1"
+                                IsSnapToTickEnabled="True" />
+                    </DockPanel>
+
+                    <DockPanel Margin="0 0 0 8">
+                        <TextBlock DockPanel.Dock="Left" Text="Alert Brightness"
+                                   VerticalAlignment="Center" Width="120" />
+                        <TextBlock DockPanel.Dock="Right"
+                                   Text="{Binding AlertBrightness, StringFormat={}{0}%}"
+                                   VerticalAlignment="Center" Width="50" TextAlignment="Right" />
+                        <Slider Value="{Binding AlertBrightness, Mode=TwoWay}"
+                                Minimum="10" Maximum="100" TickFrequency="1"
+                                IsSnapToTickEnabled="True" />
+                    </DockPanel>
+
                     <!-- Error message -->
                     <Border Background="#2d0f10" BorderBrush="#da3633" BorderThickness="1"
                             CornerRadius="4" Padding="10 6" Margin="0 16 0 0"

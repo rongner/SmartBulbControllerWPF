@@ -17,6 +17,7 @@ public partial class MainViewModel : ViewModelBase
     private readonly IDialogService    _dialogService;
     private readonly IPresetService    _presetService;
     private readonly IThemeService     _themeService;
+    private readonly IAlertService     _alertService;
 
     private readonly Debouncer _brightDebounce    = new(250);
     private readonly Debouncer _colorTempDebounce = new(250);
@@ -24,6 +25,50 @@ public partial class MainViewModel : ViewModelBase
 
     // Suppresses device calls during batch state loads and prevents RGB↔Hex feedback loops
     private bool _suppressChanges;
+
+    // ── NBA alert settings ────────────────────────────────────────────────────
+
+    public IReadOnlyList<NbaTeam> NbaTeams => Models.NbaTeams.All;
+
+    [ObservableProperty]
+    private NbaTeam? _selectedNbaTeam;
+
+    [ObservableProperty]
+    private bool _alertEnabled;
+
+    [ObservableProperty]
+    private int _alertLeadMinutes = 5;
+
+    [ObservableProperty]
+    private int _alertRevertHours = 3;
+
+    [ObservableProperty]
+    private int _alertBrightness = 100;
+
+    partial void OnAlertEnabledChanged(bool value)    { if (!_suppressChanges) SaveAlertSettings(); }
+    partial void OnAlertLeadMinutesChanged(int value) { if (!_suppressChanges) SaveAlertSettings(); }
+    partial void OnAlertRevertHoursChanged(int value) { if (!_suppressChanges) SaveAlertSettings(); }
+    partial void OnAlertBrightnessChanged(int value)  { if (!_suppressChanges) SaveAlertSettings(); }
+
+    partial void OnSelectedNbaTeamChanged(NbaTeam? value)
+    {
+        if (_suppressChanges) return;
+        _settingsService.Current.NbaTeamId = value?.Id;
+        _settingsService.Save();
+    }
+
+    private void SaveAlertSettings()
+    {
+        var cfg = _settingsService.Current;
+        cfg.AlertEnabled     = AlertEnabled;
+        cfg.LeadTimeMinutes  = AlertLeadMinutes;
+        cfg.RevertAfterHours = AlertRevertHours;
+        cfg.AlertBrightness  = AlertBrightness;
+        _settingsService.Save();
+
+        if (AlertEnabled) _alertService.Start();
+        else              _alertService.Stop();
+    }
 
     // ── Presets ───────────────────────────────────────────────────────────────
 
@@ -89,6 +134,7 @@ public partial class MainViewModel : ViewModelBase
         IDialogService   dialogService,
         IPresetService   presetService,
         IThemeService    themeService,
+        IAlertService    alertService,
         ILogger<MainViewModel> logger) : base(logger)
     {
         _deviceService   = deviceService;
@@ -96,9 +142,24 @@ public partial class MainViewModel : ViewModelBase
         _dialogService   = dialogService;
         _presetService   = presetService;
         _themeService    = themeService;
+        _alertService    = alertService;
 
         foreach (var p in presetService.Presets)
             Presets.Add(p);
+
+        // Load alert settings from persisted config
+        var cfg = settingsService.Current;
+        _suppressChanges = true;
+        AlertEnabled     = cfg.AlertEnabled;
+        AlertLeadMinutes = cfg.LeadTimeMinutes;
+        AlertRevertHours = cfg.RevertAfterHours;
+        AlertBrightness  = cfg.AlertBrightness;
+        SelectedNbaTeam  = cfg.NbaTeamId.HasValue
+            ? Models.NbaTeams.All.FirstOrDefault(t => t.Id == cfg.NbaTeamId.Value)
+            : null;
+        _suppressChanges = false;
+
+        if (cfg.AlertEnabled) alertService.Start();
     }
 
     // ── Scan ──────────────────────────────────────────────────────────────────

@@ -14,6 +14,7 @@ public class MainViewModelTests
     private readonly Mock<IDialogService>   _dialogSvc   = new();
     private readonly Mock<IPresetService>   _presetSvc   = new();
     private readonly Mock<IThemeService>    _themeSvc    = new();
+    private readonly Mock<IAlertService>    _alertSvc    = new();
 
     private MainViewModel CreateVm()
     {
@@ -25,6 +26,7 @@ public class MainViewModelTests
             _dialogSvc.Object,
             _presetSvc.Object,
             _themeSvc.Object,
+            _alertSvc.Object,
             NullLogger<MainViewModel>.Instance);
     }
 
