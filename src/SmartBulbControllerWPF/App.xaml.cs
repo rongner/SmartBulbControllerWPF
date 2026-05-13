@@ -4,6 +4,7 @@ using MahApps.Metro.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using SmartBulbControllerWPF.Interfaces;
 using SmartBulbControllerWPF.Services;
 using SmartBulbControllerWPF.ViewModels;
 
@@ -40,6 +41,7 @@ public partial class App : Application
     private static void ConfigureServices(IServiceCollection services)
     {
         services.AddHttpClient();
+        services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<MainWindow>();
         services.AddSingleton<MainViewModel>();
     }
