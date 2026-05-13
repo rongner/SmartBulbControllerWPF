@@ -8,7 +8,7 @@
         xmlns:converters="clr-namespace:SmartBulbControllerWPF.Converters"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
-        Title="Smart Bulb Controller" Height="660" Width="900"
+        Title="Smart Bulb Controller" Height="540" Width="820"
         WindowStartupLocation="CenterScreen">
 
     <!-- Menu bar -->
@@ -145,255 +145,258 @@
 
             <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" />
 
-            <!-- Right: control panel -->
-            <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="16 12">
+            <!-- Right: connection bar + tab panels -->
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
 
-                    <!-- Connection status + actions -->
-                    <DockPanel Margin="0 0 0 16">
-                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                            <Button Content="Connect"
-                                    Command="{Binding ConnectCommand}"
-                                    Style="{StaticResource MahApps.Styles.Button.Square.Accent}"
-                                    Margin="0 0 8 0" />
-                            <Button Content="Disconnect"
-                                    Command="{Binding DisconnectCommand}"
-                                    Style="{StaticResource MahApps.Styles.Button}" />
-                        </StackPanel>
-
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <Ellipse Width="10" Height="10" Margin="0 0 8 0">
-                                <Ellipse.Style>
-                                    <Style TargetType="Ellipse">
-                                        <Setter Property="Fill" Value="#da3633" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsConnected}" Value="True">
-                                                <Setter Property="Fill" Value="#3fb950" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Ellipse.Style>
-                            </Ellipse>
-                            <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" />
-                        </StackPanel>
-                    </DockPanel>
-
-                    <!-- Power toggle -->
-                    <StackPanel Orientation="Horizontal" Margin="0 0 0 16">
-                        <TextBlock Text="Power" VerticalAlignment="Center" FontSize="14"
-                                   Margin="0 0 16 0" />
-                        <mah:ToggleSwitch IsOn="{Binding IsOn, Mode=TwoWay}"
-                                          IsEnabled="{Binding IsConnected}"
-                                          OnContent="On" OffContent="Off" />
+                <!-- Connection bar -->
+                <DockPanel Grid.Row="0" Margin="16 10 16 0">
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <mah:ProgressRing Width="20" Height="20" Margin="0 0 10 0"
+                                          IsActive="{Binding IsBusy}"
+                                          Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}" />
+                        <Button Content="Connect"
+                                Command="{Binding ConnectCommand}"
+                                Style="{StaticResource MahApps.Styles.Button.Square.Accent}"
+                                Margin="0 0 6 0" />
+                        <Button Content="Disconnect"
+                                Command="{Binding DisconnectCommand}"
+                                Style="{StaticResource MahApps.Styles.Button}" />
                     </StackPanel>
-
-                    <!-- Light controls (disabled when not connected) -->
-                    <StackPanel IsEnabled="{Binding IsConnected}">
-
-                        <!-- Mode toggle -->
-                        <DockPanel Margin="0 0 0 16">
-                            <TextBlock Text="Mode" VerticalAlignment="Center" Width="120"
-                                       FontWeight="SemiBold" />
-                            <StackPanel Orientation="Horizontal">
-                                <RadioButton Content="White" IsChecked="{Binding IsWhiteMode}"
-                                             GroupName="LightMode" Margin="0 0 16 0" />
-                                <RadioButton Content="Color" GroupName="LightMode"
-                                             IsChecked="{Binding IsWhiteMode, Mode=TwoWay,
-                                                 Converter={StaticResource InverseBoolConverter}}" />
-                            </StackPanel>
-                        </DockPanel>
-
-                        <!-- Brightness (always visible) -->
-                        <DockPanel Margin="0 0 0 12">
-                            <TextBlock DockPanel.Dock="Left" Text="Brightness"
-                                       VerticalAlignment="Center" Width="120" />
-                            <TextBlock DockPanel.Dock="Right"
-                                       Text="{Binding Brightness, StringFormat={}{0}%}"
-                                       VerticalAlignment="Center" Width="40"
-                                       TextAlignment="Right" />
-                            <Slider Value="{Binding Brightness, Mode=TwoWay}"
-                                    Minimum="0" Maximum="100" TickFrequency="1"
-                                    IsSnapToTickEnabled="True" />
-                        </DockPanel>
-
-                        <!-- White mode: color temperature -->
-                        <DockPanel Margin="0 0 0 12"
-                                   Visibility="{Binding IsWhiteMode, Converter={StaticResource BoolToVisibilityConverter}}">
-                            <TextBlock DockPanel.Dock="Left" Text="Color Temp"
-                                       VerticalAlignment="Center" Width="120" />
-                            <TextBlock DockPanel.Dock="Right"
-                                       Text="{Binding ColorTemperature, StringFormat={}{0}%}"
-                                       VerticalAlignment="Center" Width="40"
-                                       TextAlignment="Right" />
-                            <Slider Value="{Binding ColorTemperature, Mode=TwoWay}"
-                                    Minimum="0" Maximum="100" TickFrequency="1"
-                                    IsSnapToTickEnabled="True" />
-                        </DockPanel>
-
-                        <!-- Color mode: RGB sliders + hex -->
-                        <StackPanel Margin="0 0 0 0">
-                            <StackPanel.Style>
-                                <Style TargetType="StackPanel">
-                                    <Setter Property="Visibility" Value="Collapsed" />
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Ellipse Width="10" Height="10" Margin="0 0 8 0">
+                            <Ellipse.Style>
+                                <Style TargetType="Ellipse">
+                                    <Setter Property="Fill" Value="#da3633" />
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsWhiteMode}" Value="False">
-                                            <Setter Property="Visibility" Value="Visible" />
+                                        <DataTrigger Binding="{Binding IsConnected}" Value="True">
+                                            <Setter Property="Fill" Value="#3fb950" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
-                            </StackPanel.Style>
-
-                            <!-- Red -->
-                            <DockPanel Margin="0 0 0 8">
-                                <TextBlock DockPanel.Dock="Left" Text="Red"
-                                           VerticalAlignment="Center" Width="120" Foreground="#f85149" />
-                                <TextBlock DockPanel.Dock="Right"
-                                           Text="{Binding ColorRed}"
-                                           VerticalAlignment="Center" Width="40"
-                                           TextAlignment="Right" />
-                                <Slider Value="{Binding ColorRed, Mode=TwoWay}"
-                                        Minimum="0" Maximum="255" TickFrequency="1"
-                                        IsSnapToTickEnabled="True" />
-                            </DockPanel>
-
-                            <!-- Green -->
-                            <DockPanel Margin="0 0 0 8">
-                                <TextBlock DockPanel.Dock="Left" Text="Green"
-                                           VerticalAlignment="Center" Width="120" Foreground="#3fb950" />
-                                <TextBlock DockPanel.Dock="Right"
-                                           Text="{Binding ColorGreen}"
-                                           VerticalAlignment="Center" Width="40"
-                                           TextAlignment="Right" />
-                                <Slider Value="{Binding ColorGreen, Mode=TwoWay}"
-                                        Minimum="0" Maximum="255" TickFrequency="1"
-                                        IsSnapToTickEnabled="True" />
-                            </DockPanel>
-
-                            <!-- Blue -->
-                            <DockPanel Margin="0 0 0 8">
-                                <TextBlock DockPanel.Dock="Left" Text="Blue"
-                                           VerticalAlignment="Center" Width="120" Foreground="#58a6ff" />
-                                <TextBlock DockPanel.Dock="Right"
-                                           Text="{Binding ColorBlue}"
-                                           VerticalAlignment="Center" Width="40"
-                                           TextAlignment="Right" />
-                                <Slider Value="{Binding ColorBlue, Mode=TwoWay}"
-                                        Minimum="0" Maximum="255" TickFrequency="1"
-                                        IsSnapToTickEnabled="True" />
-                            </DockPanel>
-
-                            <!-- Hex input + color preview -->
-                            <DockPanel Margin="0 0 0 0">
-                                <TextBlock DockPanel.Dock="Left" Text="Hex"
-                                           VerticalAlignment="Center" Width="120" />
-                                <Border DockPanel.Dock="Right" Width="32" Height="24"
-                                        CornerRadius="3" Margin="8 0 0 0">
-                                    <Border.Background>
-                                        <SolidColorBrush>
-                                            <SolidColorBrush.Color>
-                                                <MultiBinding>
-                                                    <MultiBinding.Converter>
-                                                        <converters:RgbToColorConverter />
-                                                    </MultiBinding.Converter>
-                                                    <Binding Path="ColorRed" />
-                                                    <Binding Path="ColorGreen" />
-                                                    <Binding Path="ColorBlue" />
-                                                </MultiBinding>
-                                            </SolidColorBrush.Color>
-                                        </SolidColorBrush>
-                                    </Border.Background>
-                                </Border>
-                                <TextBox Text="{Binding HexColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                         mah:TextBoxHelper.Watermark="#RRGGBB"
-                                         FontFamily="Consolas" />
-                            </DockPanel>
-                        </StackPanel>
-
+                            </Ellipse.Style>
+                        </Ellipse>
+                        <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" />
                     </StackPanel>
+                </DockPanel>
 
-                    <!-- NBA Game Alerts -->
-                    <Separator Margin="0 16 0 12" />
-                    <TextBlock Text="NBA GAME ALERTS"
-                               FontSize="11" FontWeight="SemiBold" Opacity="0.6"
-                               Margin="0 0 0 10" />
+                <!-- Tab control -->
+                <TabControl Grid.Row="1" Margin="12 8 12 0"
+                            BorderThickness="1"
+                            Style="{StaticResource MahApps.Styles.TabControl}">
+                    <TabControl.ItemContainerStyle>
+                        <Style TargetType="TabItem" BasedOn="{StaticResource MahApps.Styles.TabItem}">
+                            <Setter Property="Padding" Value="20 8" />
+                            <Setter Property="FontSize" Value="13" />
+                        </Style>
+                    </TabControl.ItemContainerStyle>
 
-                    <DockPanel Margin="0 0 0 10">
-                        <TextBlock DockPanel.Dock="Left" Text="Enable Alerts"
-                                   VerticalAlignment="Center" Width="120" />
-                        <mah:ToggleSwitch IsOn="{Binding AlertEnabled, Mode=TwoWay}"
-                                          OnContent="On" OffContent="Off" />
-                    </DockPanel>
+                    <!-- Controls tab -->
+                    <TabItem Header="Controls">
+                        <StackPanel Margin="12 14 12 12">
 
-                    <DockPanel Margin="0 0 0 8">
-                        <TextBlock DockPanel.Dock="Left" Text="Team"
-                                   VerticalAlignment="Center" Width="120" />
-                        <ComboBox ItemsSource="{Binding NbaTeams}"
-                                  SelectedItem="{Binding SelectedNbaTeam, Mode=TwoWay}"
-                                  DisplayMemberPath="Name" />
-                    </DockPanel>
+                            <!-- Power -->
+                            <DockPanel Margin="0 0 0 14">
+                                <TextBlock DockPanel.Dock="Left" Text="Power"
+                                           VerticalAlignment="Center" Width="120" FontSize="14" />
+                                <mah:ToggleSwitch IsOn="{Binding IsOn, Mode=TwoWay}"
+                                                  IsEnabled="{Binding IsConnected}"
+                                                  OnContent="On" OffContent="Off" />
+                            </DockPanel>
 
-                    <DockPanel Margin="0 0 0 8">
-                        <TextBlock DockPanel.Dock="Left" Text="Alert Before (min)"
-                                   VerticalAlignment="Center" Width="120" />
-                        <TextBlock DockPanel.Dock="Right"
-                                   Text="{Binding AlertLeadMinutes, StringFormat={}{0} min}"
-                                   VerticalAlignment="Center" Width="50" TextAlignment="Right" />
-                        <Slider Value="{Binding AlertLeadMinutes, Mode=TwoWay}"
-                                Minimum="1" Maximum="60" TickFrequency="1"
-                                IsSnapToTickEnabled="True" />
-                    </DockPanel>
+                            <!-- Light controls -->
+                            <StackPanel IsEnabled="{Binding IsConnected}">
 
-                    <DockPanel Margin="0 0 0 8">
-                        <TextBlock DockPanel.Dock="Left" Text="Revert After (hr)"
-                                   VerticalAlignment="Center" Width="120" />
-                        <TextBlock DockPanel.Dock="Right"
-                                   Text="{Binding AlertRevertHours, StringFormat={}{0} hr}"
-                                   VerticalAlignment="Center" Width="50" TextAlignment="Right" />
-                        <Slider Value="{Binding AlertRevertHours, Mode=TwoWay}"
-                                Minimum="1" Maximum="6" TickFrequency="1"
-                                IsSnapToTickEnabled="True" />
-                    </DockPanel>
+                                <!-- Mode -->
+                                <DockPanel Margin="0 0 0 14">
+                                    <TextBlock DockPanel.Dock="Left" Text="Mode"
+                                               VerticalAlignment="Center" Width="120" />
+                                    <StackPanel Orientation="Horizontal">
+                                        <RadioButton Content="White" IsChecked="{Binding IsWhiteMode}"
+                                                     GroupName="LightMode" Margin="0 0 16 0" />
+                                        <RadioButton Content="Color" GroupName="LightMode"
+                                                     IsChecked="{Binding IsWhiteMode, Mode=TwoWay,
+                                                         Converter={StaticResource InverseBoolConverter}}" />
+                                    </StackPanel>
+                                </DockPanel>
 
-                    <DockPanel Margin="0 0 0 8">
-                        <TextBlock DockPanel.Dock="Left" Text="Alert Brightness"
-                                   VerticalAlignment="Center" Width="120" />
-                        <TextBlock DockPanel.Dock="Right"
-                                   Text="{Binding AlertBrightness, StringFormat={}{0}%}"
-                                   VerticalAlignment="Center" Width="50" TextAlignment="Right" />
-                        <Slider Value="{Binding AlertBrightness, Mode=TwoWay}"
-                                Minimum="10" Maximum="100" TickFrequency="1"
-                                IsSnapToTickEnabled="True" />
-                    </DockPanel>
+                                <!-- Brightness -->
+                                <DockPanel Margin="0 0 0 10">
+                                    <TextBlock DockPanel.Dock="Left" Text="Brightness"
+                                               VerticalAlignment="Center" Width="120" />
+                                    <TextBlock DockPanel.Dock="Right"
+                                               Text="{Binding Brightness, StringFormat={}{0}%}"
+                                               VerticalAlignment="Center" Width="44" TextAlignment="Right" />
+                                    <Slider Value="{Binding Brightness, Mode=TwoWay}"
+                                            Minimum="0" Maximum="100" TickFrequency="1"
+                                            IsSnapToTickEnabled="True" />
+                                </DockPanel>
 
-                    <!-- General Settings -->
-                    <Separator Margin="0 16 0 12" />
-                    <TextBlock Text="GENERAL"
-                               FontSize="11" FontWeight="SemiBold" Opacity="0.6"
-                               Margin="0 0 0 10" />
+                                <!-- Color temp (white mode) -->
+                                <DockPanel Margin="0 0 0 10"
+                                           Visibility="{Binding IsWhiteMode, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <TextBlock DockPanel.Dock="Left" Text="Color Temp"
+                                               VerticalAlignment="Center" Width="120" />
+                                    <TextBlock DockPanel.Dock="Right"
+                                               Text="{Binding ColorTemperature, StringFormat={}{0}%}"
+                                               VerticalAlignment="Center" Width="44" TextAlignment="Right" />
+                                    <Slider Value="{Binding ColorTemperature, Mode=TwoWay}"
+                                            Minimum="0" Maximum="100" TickFrequency="1"
+                                            IsSnapToTickEnabled="True" />
+                                </DockPanel>
 
-                    <DockPanel Margin="0 0 0 8">
-                        <TextBlock DockPanel.Dock="Left" Text="Launch on Startup"
-                                   VerticalAlignment="Center" Width="120" />
-                        <mah:ToggleSwitch IsOn="{Binding LaunchOnStartup, Mode=TwoWay}"
-                                          OnContent="On" OffContent="Off" />
-                    </DockPanel>
+                                <!-- RGB + hex (color mode) -->
+                                <StackPanel>
+                                    <StackPanel.Style>
+                                        <Style TargetType="StackPanel">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsWhiteMode}" Value="False">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </StackPanel.Style>
 
-                    <!-- Error message -->
-                    <Border Background="#2d0f10" BorderBrush="#da3633" BorderThickness="1"
-                            CornerRadius="4" Padding="10 6" Margin="0 16 0 0"
-                            Visibility="{Binding ErrorMessage, Converter={StaticResource NullToCollapsedConverter}}">
-                        <TextBlock Text="{Binding ErrorMessage}" Foreground="#f85149"
-                                   TextWrapping="Wrap" FontSize="12" />
-                    </Border>
+                                    <DockPanel Margin="0 0 0 8">
+                                        <TextBlock DockPanel.Dock="Left" Text="Red"
+                                                   VerticalAlignment="Center" Width="120" Foreground="#f85149" />
+                                        <TextBlock DockPanel.Dock="Right" Text="{Binding ColorRed}"
+                                                   VerticalAlignment="Center" Width="44" TextAlignment="Right" />
+                                        <Slider Value="{Binding ColorRed, Mode=TwoWay}"
+                                                Minimum="0" Maximum="255" TickFrequency="1" IsSnapToTickEnabled="True" />
+                                    </DockPanel>
 
-                    <!-- Busy indicator -->
-                    <mah:ProgressRing Width="40" Height="40"
-                                      HorizontalAlignment="Left" Margin="0 12 0 0"
-                                      IsActive="{Binding IsBusy}"
-                                      Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}" />
+                                    <DockPanel Margin="0 0 0 8">
+                                        <TextBlock DockPanel.Dock="Left" Text="Green"
+                                                   VerticalAlignment="Center" Width="120" Foreground="#3fb950" />
+                                        <TextBlock DockPanel.Dock="Right" Text="{Binding ColorGreen}"
+                                                   VerticalAlignment="Center" Width="44" TextAlignment="Right" />
+                                        <Slider Value="{Binding ColorGreen, Mode=TwoWay}"
+                                                Minimum="0" Maximum="255" TickFrequency="1" IsSnapToTickEnabled="True" />
+                                    </DockPanel>
 
-                </StackPanel>
-            </ScrollViewer>
+                                    <DockPanel Margin="0 0 0 8">
+                                        <TextBlock DockPanel.Dock="Left" Text="Blue"
+                                                   VerticalAlignment="Center" Width="120" Foreground="#58a6ff" />
+                                        <TextBlock DockPanel.Dock="Right" Text="{Binding ColorBlue}"
+                                                   VerticalAlignment="Center" Width="44" TextAlignment="Right" />
+                                        <Slider Value="{Binding ColorBlue, Mode=TwoWay}"
+                                                Minimum="0" Maximum="255" TickFrequency="1" IsSnapToTickEnabled="True" />
+                                    </DockPanel>
+
+                                    <DockPanel>
+                                        <TextBlock DockPanel.Dock="Left" Text="Hex"
+                                                   VerticalAlignment="Center" Width="120" />
+                                        <Border DockPanel.Dock="Right" Width="32" Height="24"
+                                                CornerRadius="3" Margin="8 0 0 0">
+                                            <Border.Background>
+                                                <SolidColorBrush>
+                                                    <SolidColorBrush.Color>
+                                                        <MultiBinding>
+                                                            <MultiBinding.Converter>
+                                                                <converters:RgbToColorConverter />
+                                                            </MultiBinding.Converter>
+                                                            <Binding Path="ColorRed" />
+                                                            <Binding Path="ColorGreen" />
+                                                            <Binding Path="ColorBlue" />
+                                                        </MultiBinding>
+                                                    </SolidColorBrush.Color>
+                                                </SolidColorBrush>
+                                            </Border.Background>
+                                        </Border>
+                                        <TextBox Text="{Binding HexColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 mah:TextBoxHelper.Watermark="#RRGGBB"
+                                                 FontFamily="Consolas" />
+                                    </DockPanel>
+                                </StackPanel>
+
+                            </StackPanel>
+                        </StackPanel>
+                    </TabItem>
+
+                    <!-- Alerts tab -->
+                    <TabItem Header="Alerts">
+                        <StackPanel Margin="12 14 12 12">
+
+                            <DockPanel Margin="0 0 0 14">
+                                <TextBlock DockPanel.Dock="Left" Text="Enable Alerts"
+                                           VerticalAlignment="Center" Width="130" />
+                                <mah:ToggleSwitch IsOn="{Binding AlertEnabled, Mode=TwoWay}"
+                                                  OnContent="On" OffContent="Off" />
+                            </DockPanel>
+
+                            <DockPanel Margin="0 0 0 10">
+                                <TextBlock DockPanel.Dock="Left" Text="Team"
+                                           VerticalAlignment="Center" Width="130" />
+                                <ComboBox ItemsSource="{Binding NbaTeams}"
+                                          SelectedItem="{Binding SelectedNbaTeam, Mode=TwoWay}"
+                                          DisplayMemberPath="Name" />
+                            </DockPanel>
+
+                            <DockPanel Margin="0 0 0 10">
+                                <TextBlock DockPanel.Dock="Left" Text="Alert Before"
+                                           VerticalAlignment="Center" Width="130" />
+                                <TextBlock DockPanel.Dock="Right"
+                                           Text="{Binding AlertLeadMinutes, StringFormat={}{0} min}"
+                                           VerticalAlignment="Center" Width="50" TextAlignment="Right" />
+                                <Slider Value="{Binding AlertLeadMinutes, Mode=TwoWay}"
+                                        Minimum="1" Maximum="60" TickFrequency="1" IsSnapToTickEnabled="True" />
+                            </DockPanel>
+
+                            <DockPanel Margin="0 0 0 10">
+                                <TextBlock DockPanel.Dock="Left" Text="Revert After"
+                                           VerticalAlignment="Center" Width="130" />
+                                <TextBlock DockPanel.Dock="Right"
+                                           Text="{Binding AlertRevertHours, StringFormat={}{0} hr}"
+                                           VerticalAlignment="Center" Width="50" TextAlignment="Right" />
+                                <Slider Value="{Binding AlertRevertHours, Mode=TwoWay}"
+                                        Minimum="1" Maximum="6" TickFrequency="1" IsSnapToTickEnabled="True" />
+                            </DockPanel>
+
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Left" Text="Alert Brightness"
+                                           VerticalAlignment="Center" Width="130" />
+                                <TextBlock DockPanel.Dock="Right"
+                                           Text="{Binding AlertBrightness, StringFormat={}{0}%}"
+                                           VerticalAlignment="Center" Width="50" TextAlignment="Right" />
+                                <Slider Value="{Binding AlertBrightness, Mode=TwoWay}"
+                                        Minimum="10" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" />
+                            </DockPanel>
+
+                        </StackPanel>
+                    </TabItem>
+
+                    <!-- Settings tab -->
+                    <TabItem Header="Settings">
+                        <StackPanel Margin="12 14 12 12">
+
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Left" Text="Launch on Startup"
+                                           VerticalAlignment="Center" Width="130" />
+                                <mah:ToggleSwitch IsOn="{Binding LaunchOnStartup, Mode=TwoWay}"
+                                                  OnContent="On" OffContent="Off" />
+                            </DockPanel>
+
+                        </StackPanel>
+                    </TabItem>
+
+                </TabControl>
+
+                <!-- Error message -->
+                <Border Grid.Row="2"
+                        Background="#2d0f10" BorderBrush="#da3633" BorderThickness="1"
+                        CornerRadius="4" Padding="10 6" Margin="12 6 12 6"
+                        Visibility="{Binding ErrorMessage, Converter={StaticResource NullToCollapsedConverter}}">
+                    <TextBlock Text="{Binding ErrorMessage}" Foreground="#f85149"
+                               TextWrapping="Wrap" FontSize="12" />
+                </Border>
+
+            </Grid>
         </Grid>
 
         <!-- Status bar -->
