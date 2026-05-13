@@ -21,6 +21,7 @@ internal static class ColorControlTestHelper
             settings.Object,
             new Mock<IDialogService>().Object,
             presets.Object,
+            new Mock<IThemeService>().Object,
             NullLogger<MainViewModel>.Instance);
     }
 }

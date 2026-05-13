@@ -34,6 +34,8 @@ public partial class App : Application
 
         Log.Information("SmartBulbControllerWPF starting");
 
+        _serviceProvider.GetRequiredService<IThemeService>().ApplySaved();
+
         var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
         mainWindow.Show();
     }
@@ -45,6 +47,7 @@ public partial class App : Application
         services.AddSingleton<IDeviceService, DeviceService>();
         services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<IPresetService, PresetService>();
+        services.AddSingleton<IThemeService, ThemeService>();
         services.AddSingleton<MainWindow>();
         services.AddSingleton<MainViewModel>();
     }

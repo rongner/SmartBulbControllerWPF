@@ -13,6 +13,7 @@ public class MainViewModelTests
     private readonly Mock<ISettingsService> _settingsSvc = new();
     private readonly Mock<IDialogService>   _dialogSvc   = new();
     private readonly Mock<IPresetService>   _presetSvc   = new();
+    private readonly Mock<IThemeService>    _themeSvc    = new();
 
     private MainViewModel CreateVm()
     {
@@ -23,6 +24,7 @@ public class MainViewModelTests
             _settingsSvc.Object,
             _dialogSvc.Object,
             _presetSvc.Object,
+            _themeSvc.Object,
             NullLogger<MainViewModel>.Instance);
     }
 

@@ -16,6 +16,7 @@ public partial class MainViewModel : ViewModelBase
     private readonly ISettingsService  _settingsService;
     private readonly IDialogService    _dialogService;
     private readonly IPresetService    _presetService;
+    private readonly IThemeService     _themeService;
 
     private readonly Debouncer _brightDebounce    = new(250);
     private readonly Debouncer _colorTempDebounce = new(250);
@@ -87,12 +88,14 @@ public partial class MainViewModel : ViewModelBase
         ISettingsService settingsService,
         IDialogService   dialogService,
         IPresetService   presetService,
+        IThemeService    themeService,
         ILogger<MainViewModel> logger) : base(logger)
     {
         _deviceService   = deviceService;
         _settingsService = settingsService;
         _dialogService   = dialogService;
         _presetService   = presetService;
+        _themeService    = themeService;
 
         foreach (var p in presetService.Presets)
             Presets.Add(p);
@@ -334,6 +337,16 @@ public partial class MainViewModel : ViewModelBase
     }
 
     private bool CanDeletePreset() => SelectedPreset is { IsBuiltIn: false };
+
+    // ── Theme ─────────────────────────────────────────────────────────────────
+
+    [RelayCommand]
+    private void SetTheme(ThemePreference preference)
+    {
+        _settingsService.Current.Theme = preference;
+        _settingsService.Save();
+        _themeService.Apply(preference);
+    }
 
     // ── Menu ──────────────────────────────────────────────────────────────────
 

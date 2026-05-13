@@ -14,9 +14,23 @@
     <!-- Menu bar -->
     <mah:MetroWindow.LeftWindowCommands>
         <mah:WindowCommands>
-            <Menu Background="Transparent" Foreground="{DynamicResource MahApps.Brushes.ThemeForeground}">
+            <Menu Background="Transparent" Foreground="{DynamicResource MahApps.Brushes.ThemeForeground}"
+                  xmlns:models="clr-namespace:SmartBulbControllerWPF.Models">
                 <MenuItem Header="_File">
                     <MenuItem Header="_Exit" Command="{Binding ExitCommand}" />
+                </MenuItem>
+                <MenuItem Header="_View">
+                    <MenuItem Header="Theme">
+                        <MenuItem Header="_System Default"
+                                  Command="{Binding SetThemeCommand}"
+                                  CommandParameter="{x:Static models:ThemePreference.System}" />
+                        <MenuItem Header="_Light"
+                                  Command="{Binding SetThemeCommand}"
+                                  CommandParameter="{x:Static models:ThemePreference.Light}" />
+                        <MenuItem Header="_Dark"
+                                  Command="{Binding SetThemeCommand}"
+                                  CommandParameter="{x:Static models:ThemePreference.Dark}" />
+                    </MenuItem>
                 </MenuItem>
                 <MenuItem Header="_Help">
                     <MenuItem Header="_About" Command="{Binding ShowAboutCommand}" />
