@@ -36,6 +36,12 @@ public class DialogService : ServiceBase, IDialogService
             $"Version {version}\n\nControls DAYBETTER RGBCW bulbs over local LAN.\ngithub.com/rongner/SmartBulbControllerWPF");
     }
 
+    public async Task<string?> ShowInputAsync(string title, string message)
+    {
+        var window = GetMainWindow();
+        return await window.ShowInputAsync(title, message);
+    }
+
     public Task<ConnectDialogResult?> ShowConnectDialogAsync(string? initialIp = null, string? initialDeviceId = null)
     {
         var vm = new ConnectDialogViewModel

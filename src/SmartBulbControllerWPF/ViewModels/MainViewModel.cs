@@ -15,6 +15,7 @@ public partial class MainViewModel : ViewModelBase
     private readonly IDeviceService    _deviceService;
     private readonly ISettingsService  _settingsService;
     private readonly IDialogService    _dialogService;
+    private readonly IPresetService    _presetService;
 
     private readonly Debouncer _brightDebounce    = new(250);
     private readonly Debouncer _colorTempDebounce = new(250);
@@ -22,6 +23,16 @@ public partial class MainViewModel : ViewModelBase
 
     // Suppresses device calls during batch state loads and prevents RGB↔Hex feedback loops
     private bool _suppressChanges;
+
+    // ── Presets ───────────────────────────────────────────────────────────────
+
+    [ObservableProperty]
+    private ObservableCollection<Preset> _presets = [];
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ApplyPresetCommand))]
+    [NotifyCanExecuteChangedFor(nameof(DeletePresetCommand))]
+    private Preset? _selectedPreset;
 
     // ── Device list ───────────────────────────────────────────────────────────
 
@@ -75,11 +86,16 @@ public partial class MainViewModel : ViewModelBase
         IDeviceService   deviceService,
         ISettingsService settingsService,
         IDialogService   dialogService,
+        IPresetService   presetService,
         ILogger<MainViewModel> logger) : base(logger)
     {
         _deviceService   = deviceService;
         _settingsService = settingsService;
         _dialogService   = dialogService;
+        _presetService   = presetService;
+
+        foreach (var p in presetService.Presets)
+            Presets.Add(p);
     }
 
     // ── Scan ──────────────────────────────────────────────────────────────────
@@ -244,6 +260,80 @@ public partial class MainViewModel : ViewModelBase
         b = (byte)(rgb & 0xFF);
         return true;
     }
+
+    // ── Presets ───────────────────────────────────────────────────────────────
+
+    [RelayCommand(CanExecute = nameof(CanApplyPreset))]
+    private async Task ApplyPresetAsync()
+    {
+        var preset = SelectedPreset!;
+        await RunBusyAsync(async () =>
+        {
+            _suppressChanges = true;
+            IsWhiteMode      = preset.IsWhiteMode;
+            Brightness       = preset.Brightness;
+            ColorTemperature = preset.ColorTemperature;
+            ColorRed         = preset.R;
+            ColorGreen       = preset.G;
+            ColorBlue        = preset.B;
+            HexColor         = $"#{preset.R:X2}{preset.G:X2}{preset.B:X2}";
+            _suppressChanges = false;
+
+            if (preset.IsWhiteMode)
+            {
+                await _deviceService.SetBrightnessAsync(preset.Brightness);
+                await _deviceService.SetColorTemperatureAsync(preset.ColorTemperature);
+            }
+            else
+            {
+                await _deviceService.SetColorAsync(preset.R, preset.G, preset.B);
+                await _deviceService.SetBrightnessAsync(preset.Brightness);
+            }
+        });
+    }
+
+    private bool CanApplyPreset() => SelectedPreset is not null && IsConnected;
+
+    [RelayCommand]
+    private async Task SavePresetAsync()
+    {
+        var name = await _dialogService.ShowInputAsync("Save Preset", "Enter a name for this preset:");
+        if (string.IsNullOrWhiteSpace(name)) return;
+
+        var preset = new Preset
+        {
+            Name             = name.Trim(),
+            IsWhiteMode      = IsWhiteMode,
+            Brightness       = Brightness,
+            ColorTemperature = ColorTemperature,
+            R                = ColorRed,
+            G                = ColorGreen,
+            B                = ColorBlue,
+        };
+
+        _presetService.SaveCustom(preset);
+
+        var existing = Presets.FirstOrDefault(p => !p.IsBuiltIn && p.Name == preset.Name);
+        if (existing is not null)
+            Presets[Presets.IndexOf(existing)] = preset;
+        else
+            Presets.Add(preset);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanDeletePreset))]
+    private async Task DeletePresetAsync()
+    {
+        var preset = SelectedPreset!;
+        var confirmed = await _dialogService.ShowConfirmAsync(
+            "Delete Preset", $"Delete '{preset.Name}'?");
+        if (!confirmed) return;
+
+        _presetService.Delete(preset);
+        Presets.Remove(preset);
+        SelectedPreset = null;
+    }
+
+    private bool CanDeletePreset() => SelectedPreset is { IsBuiltIn: false };
 
     // ── Menu ──────────────────────────────────────────────────────────────────
 

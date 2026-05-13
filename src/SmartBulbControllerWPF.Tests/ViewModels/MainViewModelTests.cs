@@ -9,17 +9,20 @@ namespace SmartBulbControllerWPF.Tests.ViewModels;
 
 public class MainViewModelTests
 {
-    private readonly Mock<IDeviceService>   _deviceSvc  = new();
+    private readonly Mock<IDeviceService>   _deviceSvc   = new();
     private readonly Mock<ISettingsService> _settingsSvc = new();
-    private readonly Mock<IDialogService>   _dialogSvc  = new();
+    private readonly Mock<IDialogService>   _dialogSvc   = new();
+    private readonly Mock<IPresetService>   _presetSvc   = new();
 
     private MainViewModel CreateVm()
     {
         _settingsSvc.SetupGet(s => s.Current).Returns(new AppSettings());
+        _presetSvc.SetupGet(s => s.Presets).Returns([]);
         return new MainViewModel(
             _deviceSvc.Object,
             _settingsSvc.Object,
             _dialogSvc.Object,
+            _presetSvc.Object,
             NullLogger<MainViewModel>.Instance);
     }
 

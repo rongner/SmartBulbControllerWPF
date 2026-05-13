@@ -44,6 +44,7 @@ public partial class App : Application
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<IDeviceService, DeviceService>();
         services.AddSingleton<IDialogService, DialogService>();
+        services.AddSingleton<IPresetService, PresetService>();
         services.AddSingleton<MainWindow>();
         services.AddSingleton<MainViewModel>();
     }

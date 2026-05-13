@@ -13,10 +13,14 @@ internal static class ColorControlTestHelper
         var settings = new Mock<ISettingsService>();
         settings.SetupGet(s => s.Current).Returns(new AppSettings());
 
+        var presets = new Mock<IPresetService>();
+        presets.SetupGet(p => p.Presets).Returns([]);
+
         return new MainViewModel(
             new Mock<IDeviceService>().Object,
             settings.Object,
             new Mock<IDialogService>().Object,
+            presets.Object,
             NullLogger<MainViewModel>.Instance);
     }
 }
