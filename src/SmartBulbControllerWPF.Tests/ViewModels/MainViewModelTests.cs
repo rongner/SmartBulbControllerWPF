@@ -17,6 +17,7 @@ public class MainViewModelTests
     private readonly Mock<IThemeService>    _themeSvc    = new();
     private readonly Mock<IAlertService>    _alertSvc    = new();
     private readonly Mock<ISceneService>    _sceneSvc    = new();
+    private readonly Mock<IScheduleService> _scheduleSvc = new();
 
     private MainViewModel CreateVm()
     {
@@ -24,6 +25,7 @@ public class MainViewModelTests
         _settingsSvc.Setup(s => s.GetLocalKey()).Returns((string?)null);
         _settingsSvc.Setup(s => s.GetFriendlyName(It.IsAny<string>())).Returns((string?)null);
         _presetSvc.SetupGet(s => s.Presets).Returns([]);
+        _scheduleSvc.SetupGet(s => s.Entries).Returns([]);
         return new MainViewModel(
             _deviceSvc.Object,
             _settingsSvc.Object,
@@ -32,6 +34,7 @@ public class MainViewModelTests
             _themeSvc.Object,
             _alertSvc.Object,
             _sceneSvc.Object,
+            _scheduleSvc.Object,
             new StartupService(NullLogger<StartupService>.Instance),
             NullLogger<MainViewModel>.Instance);
     }

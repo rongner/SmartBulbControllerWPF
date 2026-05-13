@@ -20,6 +20,7 @@ public partial class MainViewModel : ViewModelBase
     private readonly IThemeService     _themeService;
     private readonly IAlertService     _alertService;
     private readonly ISceneService     _sceneService;
+    private readonly IScheduleService  _scheduleService;
     private readonly StartupService    _startupService;
 
     private readonly Debouncer _brightDebounce    = new(250);
@@ -119,6 +120,8 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ConnectCommand))]
     [NotifyCanExecuteChangedFor(nameof(RenameDeviceCommand))]
+    [NotifyCanExecuteChangedFor(nameof(AddToGroupCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RemoveFromGroupCommand))]
     private DiscoveredDevice? _selectedDevice;
 
     // ── Connection ────────────────────────────────────────────────────────────
@@ -193,15 +196,17 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     private int _sceneStepMs = 80;
 
-    public bool IsColorCycleActive => ActiveScene == SceneType.ColorCycle;
-    public bool IsPulseActive      => ActiveScene == SceneType.Pulse;
-    public bool IsStrobeActive     => ActiveScene == SceneType.Strobe;
+    public bool IsColorCycleActive   => ActiveScene == SceneType.ColorCycle;
+    public bool IsPulseActive        => ActiveScene == SceneType.Pulse;
+    public bool IsStrobeActive       => ActiveScene == SceneType.Strobe;
+    public bool IsAudioReactiveActive => ActiveScene == SceneType.AudioReactive;
 
     partial void OnActiveSceneChanged(SceneType value)
     {
         OnPropertyChanged(nameof(IsColorCycleActive));
         OnPropertyChanged(nameof(IsPulseActive));
         OnPropertyChanged(nameof(IsStrobeActive));
+        OnPropertyChanged(nameof(IsAudioReactiveActive));
     }
 
     [RelayCommand(CanExecute = nameof(CanSetScene))]
@@ -219,6 +224,109 @@ public partial class MainViewModel : ViewModelBase
 
     private bool CanSetScene() => IsConnected;
 
+    // ── Group (secondary bulbs) ───────────────────────────────────────────────
+
+    [ObservableProperty]
+    private ObservableCollection<string> _groupMemberIps = [];
+
+    [RelayCommand(CanExecute = nameof(CanAddToGroup))]
+    private async Task AddToGroupAsync()
+    {
+        var device = SelectedDevice!;
+        var result = await _dialogService.ShowConnectDialogAsync(device.Ip, device.DeviceId);
+        if (result is null) return;
+
+        await RunBusyAsync(() => _deviceService.AddToGroupAsync(result.Ip, result.DeviceId, result.LocalKey));
+        if (!GroupMemberIps.Contains(result.Ip))
+            GroupMemberIps.Add(result.Ip);
+        RefreshGroupIndicators();
+        AddToGroupCommand.NotifyCanExecuteChanged();
+        RemoveFromGroupCommand.NotifyCanExecuteChanged();
+    }
+
+    private bool CanAddToGroup() =>
+        SelectedDevice is not null && IsConnected &&
+        !(_deviceService.GroupMemberIps?.Contains(SelectedDevice.Ip) ?? false);
+
+    [RelayCommand(CanExecute = nameof(CanRemoveFromGroup))]
+    private void RemoveFromGroup()
+    {
+        var ip = SelectedDevice!.Ip;
+        _deviceService.RemoveFromGroup(ip);
+        GroupMemberIps.Remove(ip);
+        RefreshGroupIndicators();
+        AddToGroupCommand.NotifyCanExecuteChanged();
+        RemoveFromGroupCommand.NotifyCanExecuteChanged();
+    }
+
+    private bool CanRemoveFromGroup() =>
+        SelectedDevice is not null &&
+        (_deviceService.GroupMemberIps?.Contains(SelectedDevice.Ip) ?? false);
+
+    private void RefreshGroupIndicators()
+    {
+        var grouped = _deviceService.GroupMemberIps ?? [];
+        for (int i = 0; i < DiscoveredDevices.Count; i++)
+        {
+            var d = DiscoveredDevices[i];
+            var shouldBeGrouped = grouped.Contains(d.Ip);
+            if (d.IsGrouped != shouldBeGrouped)
+                DiscoveredDevices[i] = d with { IsGrouped = shouldBeGrouped };
+        }
+    }
+
+    // ── Schedule ─────────────────────────────────────────────────────────────
+
+    [ObservableProperty]
+    private ObservableCollection<ScheduleEntry> _scheduleEntries = [];
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(RemoveScheduleEntryCommand))]
+    private ScheduleEntry? _selectedScheduleEntry;
+
+    [ObservableProperty]
+    private int _newEntryHour = 7;
+
+    [ObservableProperty]
+    private int _newEntryMinute = 0;
+
+    [ObservableProperty]
+    private bool _newEntryTurnOn = true;
+
+    [ObservableProperty]
+    private bool _newEntryIsDaily = true;
+
+    [RelayCommand]
+    private void AddScheduleEntry()
+    {
+        var entry = new ScheduleEntry
+        {
+            Time    = TimeSpan.FromHours(NewEntryHour) + TimeSpan.FromMinutes(NewEntryMinute),
+            TurnOn  = NewEntryTurnOn,
+            IsDaily = NewEntryIsDaily,
+        };
+        _scheduleService.Add(entry);
+        ScheduleEntries.Add(entry);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRemoveScheduleEntry))]
+    private void RemoveScheduleEntry()
+    {
+        var entry = SelectedScheduleEntry!;
+        _scheduleService.Remove(entry.Id);
+        ScheduleEntries.Remove(entry);
+        SelectedScheduleEntry = null;
+    }
+
+    private bool CanRemoveScheduleEntry() => SelectedScheduleEntry is not null;
+
+    [RelayCommand]
+    private void ToggleScheduleEntry(ScheduleEntry entry)
+    {
+        entry.IsEnabled = !entry.IsEnabled;
+        _scheduleService.SetEnabled(entry.Id, entry.IsEnabled);
+    }
+
     // ── Constructor ───────────────────────────────────────────────────────────
 
     public MainViewModel(
@@ -229,6 +337,7 @@ public partial class MainViewModel : ViewModelBase
         IThemeService    themeService,
         IAlertService    alertService,
         ISceneService    sceneService,
+        IScheduleService scheduleService,
         StartupService   startupService,
         ILogger<MainViewModel> logger) : base(logger)
     {
@@ -239,10 +348,14 @@ public partial class MainViewModel : ViewModelBase
         _themeService    = themeService;
         _alertService    = alertService;
         _sceneService    = sceneService;
+        _scheduleService = scheduleService;
         _startupService  = startupService;
 
         foreach (var p in presetService.Presets)
             Presets.Add(p);
+
+        foreach (var e in scheduleService.Entries)
+            ScheduleEntries.Add(e);
 
         var cfg = settingsService.Current;
         _suppressChanges = true;
@@ -263,6 +376,7 @@ public partial class MainViewModel : ViewModelBase
 
         LaunchOnStartup = startupService.IsLaunchOnStartupEnabled();
         if (cfg.AlertEnabled) alertService.Start();
+        scheduleService.Start();
     }
 
     // ── Scan ──────────────────────────────────────────────────────────────────
@@ -319,7 +433,9 @@ public partial class MainViewModel : ViewModelBase
     {
         _sceneService.Stop();
         ActiveScene = SceneType.None;
-        _deviceService.Disconnect();
+        _deviceService.Disconnect();   // also clears group
+        GroupMemberIps.Clear();
+        RefreshGroupIndicators();
         IsConnected = false;
         LoadStateQuiet(new DeviceState());
         StatusText  = "Not connected";

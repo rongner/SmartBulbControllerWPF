@@ -8,14 +8,18 @@ namespace SmartBulbControllerWPF.Services;
 public class SceneService : ServiceBase, ISceneService
 {
     private readonly IDeviceService _deviceService;
+    private readonly IAudioService  _audioService;
     private CancellationTokenSource? _cts;
 
     public SceneType ActiveScene { get; private set; }
 
-    public SceneService(IDeviceService deviceService, ILogger<SceneService> logger)
-        : base(logger)
+    public SceneService(
+        IDeviceService deviceService,
+        IAudioService  audioService,
+        ILogger<SceneService> logger) : base(logger)
     {
         _deviceService = deviceService;
+        _audioService  = audioService;
     }
 
     public void Start(SceneType scene, byte r, byte g, byte b, int stepMs)
@@ -30,10 +34,11 @@ public class SceneService : ServiceBase, ISceneService
 
         _ = scene switch
         {
-            SceneType.ColorCycle => RunColorCycleAsync(stepCopy, token),
-            SceneType.Pulse      => RunPulseAsync(r, g, b, stepCopy, token),
-            SceneType.Strobe     => RunStrobeAsync(r, g, b, stepCopy, token),
-            _                    => Task.CompletedTask,
+            SceneType.ColorCycle   => RunColorCycleAsync(stepCopy, token),
+            SceneType.Pulse        => RunPulseAsync(r, g, b, stepCopy, token),
+            SceneType.Strobe       => RunStrobeAsync(r, g, b, stepCopy, token),
+            SceneType.AudioReactive => RunAudioReactiveAsync(stepCopy, token),
+            _                      => Task.CompletedTask,
         };
     }
 
@@ -110,5 +115,26 @@ public class SceneService : ServiceBase, ISceneService
             }
         }
         catch (OperationCanceledException) { }
+    }
+
+    private async Task RunAudioReactiveAsync(int stepMs, CancellationToken ct)
+    {
+        try
+        {
+            _audioService.Start();
+            while (!ct.IsCancellationRequested)
+            {
+                int brightness = Math.Clamp((int)(_audioService.CurrentVolume * 100), 5, 100);
+                try { await _deviceService.SetBrightnessAsync(brightness, ct); }
+                catch (OperationCanceledException) { return; }
+                catch (Exception ex) { Logger.LogWarning(ex, "Audio reactive step failed"); }
+                await Task.Delay(stepMs, ct);
+            }
+        }
+        catch (OperationCanceledException) { }
+        finally
+        {
+            _audioService.Stop();
+        }
     }
 }

@@ -9,9 +9,10 @@ namespace SmartBulbControllerWPF.Tests.Services;
 public class SceneServiceTests
 {
     private readonly Mock<IDeviceService> _deviceSvc = new();
+    private readonly Mock<IAudioService>  _audioSvc  = new();
 
     private SceneService Create() =>
-        new(_deviceSvc.Object, NullLogger<SceneService>.Instance);
+        new(_deviceSvc.Object, _audioSvc.Object, NullLogger<SceneService>.Instance);
 
     [Fact]
     public void InitialState_IsNone()

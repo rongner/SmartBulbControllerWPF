@@ -19,6 +19,9 @@ internal static class ColorControlTestHelper
         var presets = new Mock<IPresetService>();
         presets.SetupGet(p => p.Presets).Returns([]);
 
+        var schedule = new Mock<IScheduleService>();
+        schedule.SetupGet(s => s.Entries).Returns([]);
+
         return new MainViewModel(
             new Mock<IDeviceService>().Object,
             settings.Object,
@@ -27,6 +30,7 @@ internal static class ColorControlTestHelper
             new Mock<IThemeService>().Object,
             new Mock<IAlertService>().Object,
             new Mock<ISceneService>().Object,
+            schedule.Object,
             new StartupService(NullLogger<StartupService>.Instance),
             NullLogger<MainViewModel>.Instance);
     }

@@ -8,32 +8,32 @@ using SmartBulbControllerWPF.ViewModels;
 
 namespace SmartBulbControllerWPF.Tests.ViewModels;
 
-public class SceneViewModelTests
+public class GroupViewModelTests
 {
     private readonly Mock<IDeviceService>   _deviceSvc   = new();
     private readonly Mock<ISettingsService> _settingsSvc = new();
-    private readonly Mock<ISceneService>    _sceneSvc    = new();
+    private readonly Mock<IDialogService>   _dialogSvc   = new();
 
     private MainViewModel CreateVm()
     {
         _settingsSvc.SetupGet(s => s.Current).Returns(new AppSettings());
         _settingsSvc.Setup(s => s.GetLocalKey()).Returns((string?)null);
         _settingsSvc.Setup(s => s.GetFriendlyName(It.IsAny<string>())).Returns((string?)null);
+        _deviceSvc.SetupGet(d => d.GroupMemberIps).Returns([]);
 
         var presets = new Mock<IPresetService>();
         presets.SetupGet(p => p.Presets).Returns([]);
-
         var schedule = new Mock<IScheduleService>();
         schedule.SetupGet(s => s.Entries).Returns([]);
 
         return new MainViewModel(
             _deviceSvc.Object,
             _settingsSvc.Object,
-            new Mock<IDialogService>().Object,
+            _dialogSvc.Object,
             presets.Object,
             new Mock<IThemeService>().Object,
             new Mock<IAlertService>().Object,
-            _sceneSvc.Object,
+            new Mock<ISceneService>().Object,
             schedule.Object,
             new StartupService(NullLogger<StartupService>.Instance),
             NullLogger<MainViewModel>.Instance);
@@ -42,14 +42,12 @@ public class SceneViewModelTests
     private async Task ConnectVmAsync(MainViewModel vm)
     {
         var result = new ConnectDialogResult("10.0.0.1", "dev01", "key");
-        var dialog = new Mock<IDialogService>();
-        dialog.Setup(d => d.ShowConnectDialogAsync(It.IsAny<string?>(), It.IsAny<string?>()))
-              .ReturnsAsync(result);
-
+        _dialogSvc.Setup(d => d.ShowConnectDialogAsync(It.IsAny<string?>(), It.IsAny<string?>()))
+                  .ReturnsAsync(result);
         _deviceSvc.Setup(d => d.ConnectAsync(It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<string>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         _deviceSvc.Setup(d => d.GetStateAsync(It.IsAny<CancellationToken>()))
-              .ReturnsAsync(new DeviceState());
+                  .ReturnsAsync(new DeviceState());
         _settingsSvc.Setup(s => s.SetLocalKey(It.IsAny<string>()));
         _settingsSvc.Setup(s => s.Save());
 
@@ -57,79 +55,65 @@ public class SceneViewModelTests
     }
 
     [Fact]
-    public void InitialActiveScene_IsNone()
+    public void AddToGroup_CannotExecute_WhenNotConnected()
     {
         var vm = CreateVm();
-        Assert.Equal(SceneType.None, vm.ActiveScene);
+        vm.SelectedDevice = new DiscoveredDevice("10.0.0.2", "dev02", "3.3");
+
+        Assert.False(vm.AddToGroupCommand.CanExecute(null));
     }
 
     [Fact]
-    public async Task SetScene_WhenConnected_StartsScene()
+    public async Task AddToGroup_CallsDeviceService()
     {
         var vm = CreateVm();
         await ConnectVmAsync(vm);
 
-        vm.SetSceneCommand.Execute(SceneType.ColorCycle);
+        var secondary = new DiscoveredDevice("10.0.0.2", "dev02", "3.3");
+        vm.DiscoveredDevices.Add(secondary);
+        vm.SelectedDevice = secondary;
 
-        _sceneSvc.Verify(s => s.Start(SceneType.ColorCycle,
-            It.IsAny<byte>(), It.IsAny<byte>(), It.IsAny<byte>(),
-            It.IsAny<int>()), Times.Once);
-        Assert.Equal(SceneType.ColorCycle, vm.ActiveScene);
-        Assert.True(vm.IsColorCycleActive);
+        _dialogSvc.Setup(d => d.ShowConnectDialogAsync("10.0.0.2", "dev02"))
+                  .ReturnsAsync(new ConnectDialogResult("10.0.0.2", "dev02", "key2"));
+        _deviceSvc.Setup(d => d.AddToGroupAsync("10.0.0.2", "dev02", "key2",
+            It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        _deviceSvc.SetupGet(d => d.GroupMemberIps).Returns(["10.0.0.2"]);
+
+        await ((IAsyncRelayCommand)vm.AddToGroupCommand).ExecuteAsync(null);
+
+        _deviceSvc.Verify(d => d.AddToGroupAsync("10.0.0.2", "dev02", "key2",
+            It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Contains("10.0.0.2", vm.GroupMemberIps);
     }
 
     [Fact]
-    public async Task SetScene_SameScene_StopsIt()
+    public async Task RemoveFromGroup_CallsDeviceService()
     {
         var vm = CreateVm();
         await ConnectVmAsync(vm);
 
-        vm.SetSceneCommand.Execute(SceneType.Pulse);
-        vm.SetSceneCommand.Execute(SceneType.Pulse);
+        var secondary = new DiscoveredDevice("10.0.0.3", "dev03", "3.3");
+        vm.DiscoveredDevices.Add(secondary);
+        vm.GroupMemberIps.Add("10.0.0.3");
+        vm.SelectedDevice = secondary;
+        _deviceSvc.SetupGet(d => d.GroupMemberIps).Returns(["10.0.0.3"]);
 
-        _sceneSvc.Verify(s => s.Stop(), Times.AtLeastOnce);
-        Assert.Equal(SceneType.None, vm.ActiveScene);
+        vm.RemoveFromGroupCommand.Execute(null);
+
+        _deviceSvc.Verify(d => d.RemoveFromGroup("10.0.0.3"), Times.Once);
+        Assert.DoesNotContain("10.0.0.3", vm.GroupMemberIps);
     }
 
     [Fact]
-    public async Task SetScene_None_StopsAnyScene()
+    public async Task Disconnect_ClearsGroupMemberIps()
     {
         var vm = CreateVm();
         await ConnectVmAsync(vm);
 
-        vm.SetSceneCommand.Execute(SceneType.Strobe);
-        vm.SetSceneCommand.Execute(SceneType.None);
+        vm.GroupMemberIps.Add("10.0.0.4");
 
-        _sceneSvc.Verify(s => s.Stop(), Times.AtLeastOnce);
-        Assert.Equal(SceneType.None, vm.ActiveScene);
-    }
-
-    [Fact]
-    public async Task Disconnect_StopsRunningScene()
-    {
-        var vm = CreateVm();
-        await ConnectVmAsync(vm);
-
-        vm.SetSceneCommand.Execute(SceneType.ColorCycle);
         vm.DisconnectCommand.Execute(null);
 
-        _sceneSvc.Verify(s => s.Stop(), Times.AtLeastOnce);
-        Assert.Equal(SceneType.None, vm.ActiveScene);
-    }
-
-    [Fact]
-    public void IsColorCycleActive_ReflectsActiveScene()
-    {
-        var vm = CreateVm();
-        Assert.False(vm.IsColorCycleActive);
-        Assert.False(vm.IsPulseActive);
-        Assert.False(vm.IsStrobeActive);
-    }
-
-    [Fact]
-    public void SetScene_CanExecute_OnlyWhenConnected()
-    {
-        var vm = CreateVm();
-        Assert.False(vm.SetSceneCommand.CanExecute(SceneType.Pulse));
+        Assert.Empty(vm.GroupMemberIps);
     }
 }

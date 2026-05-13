@@ -81,7 +81,12 @@
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Margin="4">
-                                    <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
+                                        <TextBlock Text=" [G]" FontSize="10" Foreground="#3fb950"
+                                                   VerticalAlignment="Center" Margin="4 0 0 0"
+                                                   Visibility="{Binding IsGrouped, Converter={StaticResource BoolToVisibilityConverter}}" />
+                                    </StackPanel>
                                     <TextBlock Text="{Binding DeviceId}" FontSize="11" Opacity="0.6"
                                                TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
@@ -89,9 +94,11 @@
                         </ListBox.ItemTemplate>
                         <ListBox.ContextMenu>
                             <ContextMenu>
-                                <MenuItem Header="Connect" Command="{Binding ConnectCommand}" />
-                                <MenuItem Header="Rename…"
-                                          Command="{Binding RenameDeviceCommand}" />
+                                <MenuItem Header="Connect"      Command="{Binding ConnectCommand}" />
+                                <MenuItem Header="Rename…"      Command="{Binding RenameDeviceCommand}" />
+                                <Separator />
+                                <MenuItem Header="Add to Group"      Command="{Binding AddToGroupCommand}" />
+                                <MenuItem Header="Remove from Group" Command="{Binding RemoveFromGroupCommand}" />
                             </ContextMenu>
                         </ListBox.ContextMenu>
                     </ListBox>
@@ -331,7 +338,7 @@
                                            FontSize="11" FontWeight="SemiBold" Opacity="0.6"
                                            Margin="0 0 0 8" />
                                 <StackPanel IsEnabled="{Binding IsConnected}">
-                                    <UniformGrid Columns="4" Margin="0 0 0 8"
+                                    <UniformGrid Columns="5" Margin="0 0 0 8"
                                                  xmlns:models="clr-namespace:SmartBulbControllerWPF.Models">
                                         <ToggleButton Content="Color Cycle" Margin="0 0 4 0" Padding="6 4"
                                                       IsChecked="{Binding IsColorCycleActive, Mode=OneWay}"
@@ -345,6 +352,10 @@
                                                       IsChecked="{Binding IsStrobeActive, Mode=OneWay}"
                                                       Command="{Binding SetSceneCommand}"
                                                       CommandParameter="{x:Static models:SceneType.Strobe}" />
+                                        <ToggleButton Content="Audio" Margin="0 0 4 0" Padding="6 4"
+                                                      IsChecked="{Binding IsAudioReactiveActive, Mode=OneWay}"
+                                                      Command="{Binding SetSceneCommand}"
+                                                      CommandParameter="{x:Static models:SceneType.AudioReactive}" />
                                         <ToggleButton Content="Stop" Padding="6 4"
                                                       Command="{Binding SetSceneCommand}"
                                                       CommandParameter="{x:Static models:SceneType.None}" />
@@ -425,6 +436,89 @@
                             </DockPanel>
 
                         </StackPanel>
+                    </TabItem>
+
+                    <!-- Schedule tab -->
+                    <TabItem Header="Schedule">
+                        <Grid Margin="12 14 12 12">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <!-- New entry form -->
+                            <StackPanel Grid.Row="0" Margin="0 0 0 10">
+                                <TextBlock Text="ADD ENTRY" FontSize="11" FontWeight="SemiBold"
+                                           Opacity="0.6" Margin="0 0 0 8" />
+                                <DockPanel Margin="0 0 0 8">
+                                    <TextBlock DockPanel.Dock="Left" Text="Time"
+                                               VerticalAlignment="Center" Width="80" />
+                                    <StackPanel Orientation="Horizontal">
+                                        <mah:NumericUpDown Value="{Binding NewEntryHour, Mode=TwoWay}"
+                                                           Minimum="0" Maximum="23" Width="58"
+                                                           StringFormat="D2" />
+                                        <TextBlock Text=":" VerticalAlignment="Center"
+                                                   Margin="4 0" FontSize="15" FontWeight="Bold" />
+                                        <mah:NumericUpDown Value="{Binding NewEntryMinute, Mode=TwoWay}"
+                                                           Minimum="0" Maximum="59" Width="58"
+                                                           StringFormat="D2" />
+                                    </StackPanel>
+                                </DockPanel>
+                                <DockPanel Margin="0 0 0 8">
+                                    <TextBlock DockPanel.Dock="Left" Text="Action"
+                                               VerticalAlignment="Center" Width="80" />
+                                    <StackPanel Orientation="Horizontal">
+                                        <RadioButton Content="Turn On"  GroupName="SchedAction" Margin="0 0 16 0"
+                                                     IsChecked="{Binding NewEntryTurnOn}" />
+                                        <RadioButton Content="Turn Off" GroupName="SchedAction"
+                                                     IsChecked="{Binding NewEntryTurnOn,
+                                                         Converter={StaticResource InverseBoolConverter}}" />
+                                    </StackPanel>
+                                </DockPanel>
+                                <DockPanel Margin="0 0 0 8">
+                                    <TextBlock DockPanel.Dock="Left" Text="Repeat"
+                                               VerticalAlignment="Center" Width="80" />
+                                    <StackPanel Orientation="Horizontal">
+                                        <RadioButton Content="Daily" GroupName="SchedRepeat" Margin="0 0 16 0"
+                                                     IsChecked="{Binding NewEntryIsDaily}" />
+                                        <RadioButton Content="Once"  GroupName="SchedRepeat"
+                                                     IsChecked="{Binding NewEntryIsDaily,
+                                                         Converter={StaticResource InverseBoolConverter}}" />
+                                    </StackPanel>
+                                </DockPanel>
+                                <Button Content="Add" HorizontalAlignment="Left" Padding="20 4"
+                                        Command="{Binding AddScheduleEntryCommand}"
+                                        Style="{StaticResource MahApps.Styles.Button.Square.Accent}" />
+                            </StackPanel>
+
+                            <Separator Grid.Row="1" VerticalAlignment="Top" Margin="0 0 0 8" />
+
+                            <!-- Entry list -->
+                            <ListBox Grid.Row="1" Margin="0 12 0 0"
+                                     ItemsSource="{Binding ScheduleEntries}"
+                                     SelectedItem="{Binding SelectedScheduleEntry}"
+                                     BorderThickness="1">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <DockPanel Margin="4 2">
+                                            <mah:ToggleSwitch DockPanel.Dock="Right"
+                                                              IsOn="{Binding IsEnabled, Mode=TwoWay}"
+                                                              OnContent="" OffContent=""
+                                                              Margin="8 0 0 0" />
+                                            <TextBlock Text="{Binding DisplayText}"
+                                                       VerticalAlignment="Center" />
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <!-- Remove button -->
+                            <Button Grid.Row="2" Content="Remove Selected"
+                                    Command="{Binding RemoveScheduleEntryCommand}"
+                                    Style="{StaticResource MahApps.Styles.Button}"
+                                    HorizontalAlignment="Left" Margin="0 8 0 0" />
+                        </Grid>
                     </TabItem>
 
                     <!-- Settings tab -->

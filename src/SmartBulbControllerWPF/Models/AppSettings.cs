@@ -22,6 +22,9 @@ public class AppSettings
 
     // Device display names (IP → label)
     public Dictionary<string, string> DeviceLabels { get; set; } = new();
+
+    // Light schedule
+    public List<ScheduleEntry> ScheduleEntries { get; set; } = [];
 }
 
 public enum ThemePreference { System, Light, Dark }

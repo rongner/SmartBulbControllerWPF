@@ -19,8 +19,35 @@ public class DeviceService : ServiceBase, IDeviceService, IDisposable
     private const int ColorTempMax  = 1000;
 
     private TuyaDevice? _device;
+    private readonly Dictionary<string, TuyaDevice> _group = new();
 
     public bool IsConnected => _device != null;
+
+    // ── Group ─────────────────────────────────────────────────────────────────
+
+    public IReadOnlyList<string> GroupMemberIps => [.. _group.Keys];
+
+    public Task AddToGroupAsync(string ip, string deviceId, string localKey, CancellationToken ct = default)
+    {
+        if (!_group.ContainsKey(ip))
+            _group[ip] = new TuyaDevice(ip, localKey, deviceId, TuyaProtocolVersion.V33);
+        Logger.LogInformation("Added group member {Ip}", ip);
+        return Task.CompletedTask;
+    }
+
+    public void RemoveFromGroup(string ip)
+    {
+        if (_group.Remove(ip, out var d)) d.Dispose();
+        Logger.LogInformation("Removed group member {Ip}", ip);
+    }
+
+    public void ClearGroup()
+    {
+        foreach (var d in _group.Values) d.Dispose();
+        _group.Clear();
+    }
+
+    // ── Discovery / Connection ────────────────────────────────────────────────
 
     public DeviceService(ILogger<DeviceService> logger) : base(logger) { }
 
@@ -56,9 +83,12 @@ public class DeviceService : ServiceBase, IDeviceService, IDisposable
 
     public void Disconnect()
     {
+        ClearGroup();
         _device?.Dispose();
         _device = null;
     }
+
+    // ── State ─────────────────────────────────────────────────────────────────
 
     public async Task<DeviceState> GetStateAsync(CancellationToken ct = default)
     {
@@ -67,10 +97,14 @@ public class DeviceService : ServiceBase, IDeviceService, IDisposable
         return ParseState(dps);
     }
 
+    // ── Commands (fan-out to group) ───────────────────────────────────────────
+
     public async Task SetPowerAsync(bool on, CancellationToken ct = default)
     {
         EnsureConnected();
-        await _device!.SetDpAsync(DpPower, on, cancellationToken: ct);
+        var tasks = GroupTasks(d => d.SetDpAsync(DpPower, on, cancellationToken: ct));
+        tasks.Insert(0, _device!.SetDpAsync(DpPower, on, cancellationToken: ct));
+        await Task.WhenAll(tasks);
         Logger.LogInformation("Power set to {State}", on ? "on" : "off");
     }
 
@@ -78,11 +112,10 @@ public class DeviceService : ServiceBase, IDeviceService, IDisposable
     {
         EnsureConnected();
         var hsv = RgbToTuyaHsv(r, g, b);
-        await _device!.SetDpsAsync(new Dictionary<int, object>
-        {
-            { DpMode,  "colour" },
-            { DpColor, hsv },
-        }, cancellationToken: ct);
+        var dps = new Dictionary<int, object> { { DpMode, "colour" }, { DpColor, hsv } };
+        var tasks = GroupTasks(d => d.SetDpsAsync(dps, cancellationToken: ct));
+        tasks.Insert(0, _device!.SetDpsAsync(dps, cancellationToken: ct));
+        await Task.WhenAll(tasks);
         Logger.LogInformation("Color set to #{R:X2}{G:X2}{B:X2}", r, g, b);
     }
 
@@ -90,11 +123,10 @@ public class DeviceService : ServiceBase, IDeviceService, IDisposable
     {
         EnsureConnected();
         var value = ScaleToRange(percent, BrightnessMin, BrightnessMax);
-        await _device!.SetDpsAsync(new Dictionary<int, object>
-        {
-            { DpMode,       "white" },
-            { DpBrightness, value   },
-        }, cancellationToken: ct);
+        var dps   = new Dictionary<int, object> { { DpMode, "white" }, { DpBrightness, value } };
+        var tasks = GroupTasks(d => d.SetDpsAsync(dps, cancellationToken: ct));
+        tasks.Insert(0, _device!.SetDpsAsync(dps, cancellationToken: ct));
+        await Task.WhenAll(tasks);
         Logger.LogInformation("Brightness set to {Percent}%", percent);
     }
 
@@ -102,17 +134,19 @@ public class DeviceService : ServiceBase, IDeviceService, IDisposable
     {
         EnsureConnected();
         var value = ScaleToRange(percent, ColorTempMin, ColorTempMax);
-        await _device!.SetDpsAsync(new Dictionary<int, object>
-        {
-            { DpMode,     "white" },
-            { DpColorTemp, value  },
-        }, cancellationToken: ct);
+        var dps   = new Dictionary<int, object> { { DpMode, "white" }, { DpColorTemp, value } };
+        var tasks = GroupTasks(d => d.SetDpsAsync(dps, cancellationToken: ct));
+        tasks.Insert(0, _device!.SetDpsAsync(dps, cancellationToken: ct));
+        await Task.WhenAll(tasks);
         Logger.LogInformation("Color temperature set to {Percent}%", percent);
     }
 
     public void Dispose() => Disconnect();
 
     // ── Helpers ──────────────────────────────────────────────────────────────
+
+    private List<Task> GroupTasks(Func<TuyaDevice, Task> cmd) =>
+        _group.Values.Select(cmd).ToList();
 
     private void EnsureConnected()
     {
@@ -133,7 +167,6 @@ public class DeviceService : ServiceBase, IDeviceService, IDisposable
     }
 
     // Tuya HSV format: HHHHSSSSVVVV (12 hex chars)
-    // H: 0-360, S: 0-1000, V: 0-1000
     internal static string RgbToTuyaHsv(byte r, byte g, byte b)
     {
         double rf = r / 255.0, gf = g / 255.0, bf = b / 255.0;
@@ -153,11 +186,7 @@ public class DeviceService : ServiceBase, IDeviceService, IDisposable
         double s = max == 0 ? 0 : delta / max;
         double v = max;
 
-        int hi = (int)Math.Round(h);
-        int si = (int)Math.Round(s * 1000);
-        int vi = (int)Math.Round(v * 1000);
-
-        return $"{hi:X4}{si:X4}{vi:X4}";
+        return $"{(int)Math.Round(h):X4}{(int)Math.Round(s * 1000):X4}{(int)Math.Round(v * 1000):X4}";
     }
 
     internal static (byte R, byte G, byte B) TuyaHsvToRgb(string hsv)
@@ -167,17 +196,14 @@ public class DeviceService : ServiceBase, IDeviceService, IDisposable
         double s = Convert.ToInt32(hsv[4..8], 16) / 1000.0;
         double v = Convert.ToInt32(hsv[8..],  16) / 1000.0;
 
-        double c  = v * s;
-        double x  = c * (1 - Math.Abs((h / 60) % 2 - 1));
-        double m  = v - c;
-
+        double c = v * s, x = c * (1 - Math.Abs((h / 60) % 2 - 1)), m = v - c;
         double rf, gf, bf;
-        if      (h < 60)  { rf = c;  gf = x;  bf = 0; }
-        else if (h < 120) { rf = x;  gf = c;  bf = 0; }
-        else if (h < 180) { rf = 0;  gf = c;  bf = x; }
-        else if (h < 240) { rf = 0;  gf = x;  bf = c; }
-        else if (h < 300) { rf = x;  gf = 0;  bf = c; }
-        else              { rf = c;  gf = 0;  bf = x; }
+        if      (h < 60)  { rf = c; gf = x; bf = 0; }
+        else if (h < 120) { rf = x; gf = c; bf = 0; }
+        else if (h < 180) { rf = 0; gf = c; bf = x; }
+        else if (h < 240) { rf = 0; gf = x; bf = c; }
+        else if (h < 300) { rf = x; gf = 0; bf = c; }
+        else              { rf = c; gf = 0; bf = x; }
 
         return ((byte)((rf + m) * 255), (byte)((gf + m) * 255), (byte)((bf + m) * 255));
     }

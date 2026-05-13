@@ -16,12 +16,14 @@ public class CommandIntegrationTests
     private readonly Mock<IPresetService>   _presetSvc   = new();
     private readonly Mock<IAlertService>    _alertSvc    = new();
     private readonly Mock<ISceneService>    _sceneSvc    = new();
+    private readonly Mock<IScheduleService> _scheduleSvc = new();
     private AppSettings _appSettings = new();
 
     private MainViewModel CreateVm()
     {
         _settingsSvc.SetupGet(s => s.Current).Returns(_appSettings);
         _presetSvc.SetupGet(s => s.Presets).Returns([]);
+        _scheduleSvc.SetupGet(s => s.Entries).Returns([]);
         return new MainViewModel(
             _deviceSvc.Object,
             _settingsSvc.Object,
@@ -30,6 +32,7 @@ public class CommandIntegrationTests
             new Mock<IThemeService>().Object,
             _alertSvc.Object,
             _sceneSvc.Object,
+            _scheduleSvc.Object,
             new StartupService(NullLogger<StartupService>.Instance),
             NullLogger<MainViewModel>.Instance);
     }

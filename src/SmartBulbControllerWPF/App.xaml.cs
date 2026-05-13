@@ -113,7 +113,9 @@ public partial class App : Application
         services.AddSingleton<IThemeService, ThemeService>();
         services.AddSingleton<EspnScheduleService>();
         services.AddSingleton<IAlertService, AlertService>();
+        services.AddSingleton<IAudioService, AudioService>();
         services.AddSingleton<ISceneService, SceneService>();
+        services.AddSingleton<IScheduleService, ScheduleService>();
         services.AddSingleton<StartupService>();
         services.AddSingleton<MainWindow>();
         services.AddSingleton<MainViewModel>();
