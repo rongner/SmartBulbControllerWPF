@@ -51,6 +51,20 @@ without any cloud dependency.
 - [ ] Connection status indicator
 - [ ] Option to launch on Windows startup (registry run key, toggled in settings)
 
+### Menus
+- [ ] Menu bar on main window: **File** (Exit) | **Help** (About)
+- [ ] Context menu on device list items: Connect, Remove
+- [ ] All menu commands bound via `[RelayCommand]` on the ViewModel — no code-behind handlers
+
+### Dialogs
+- [ ] All dialogs use MahApps.Metro dialog framework (`ShowMetroDialogAsync`) for consistent styling
+- [ ] `IDialogService` interface — ViewModels call dialogs through this service, never reference Views directly
+- [ ] **Connect to Device dialog** — fields for IP address, device ID, local key; validates input before confirming
+- [ ] **Add / Edit Preset dialog** — name field + colour picker; used for both create and edit flows
+- [ ] **Confirm dialog** — generic yes/no for destructive actions (e.g. delete preset, remove device)
+- [ ] **About dialog** — app name, version, link to repo
+- [ ] `IDialogService` mocked in ViewModel tests to verify correct dialogs are shown at the right times
+
 ### Settings Persistence
 - [ ] All user settings persisted to a local JSON file in `%AppData%\SmartBulbControllerWPF\settings.json`
 - [ ] Settings include: device credentials, lead time, revert duration, selected team, alert enabled/disabled, launch behavior, startup on login
