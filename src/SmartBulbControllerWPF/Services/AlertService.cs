@@ -12,8 +12,11 @@ public class AlertService : ServiceBase, IAlertService
 
     private CancellationTokenSource? _cts;
     private bool _alertFired;
+    private DateTime? _nextGameTime;
 
     public bool IsRunning => _cts is { IsCancellationRequested: false };
+    public DateTime? NextGameTime => _nextGameTime;
+    public event Action? NextGameUpdated;
 
     public AlertService(
         IDeviceService      device,
@@ -71,6 +74,11 @@ public class AlertService : ServiceBase, IAlertService
         if (team is null) return;
 
         var nextGame = await _espn.GetNextGameTimeAsync(team.Id, ct);
+        if (_nextGameTime != nextGame)
+        {
+            _nextGameTime = nextGame;
+            NextGameUpdated?.Invoke();
+        }
         if (nextGame is null) return;
 
         var leadTime    = TimeSpan.FromMinutes(cfg.LeadTimeMinutes);

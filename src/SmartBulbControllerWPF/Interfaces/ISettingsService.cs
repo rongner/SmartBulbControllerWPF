@@ -8,4 +8,6 @@ public interface ISettingsService
     void Save();
     string? GetLocalKey();
     void SetLocalKey(string localKey);
+    string? GetFriendlyName(string deviceIp);
+    void SetFriendlyName(string deviceIp, string name);
 }

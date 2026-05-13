@@ -28,6 +28,12 @@ public partial class MainViewModel : ViewModelBase
     // Suppresses device calls during batch state loads and prevents RGB↔Hex feedback loops
     private bool _suppressChanges;
 
+    // ── App version ───────────────────────────────────────────────────────────
+
+    public string AppVersion =>
+        System.Reflection.Assembly.GetEntryAssembly()
+            ?.GetName().Version?.ToString(3) ?? "1.0.0";
+
     // ── Startup on login ─────────────────────────────────────────────────────
 
     [ObservableProperty]
@@ -49,6 +55,12 @@ public partial class MainViewModel : ViewModelBase
     private NbaTeam? _selectedNbaTeam;
 
     [ObservableProperty]
+    private string _alertTeamColorHex = "#888888";
+
+    [ObservableProperty]
+    private string _nextGameText = "–";
+
+    [ObservableProperty]
     private bool _alertEnabled;
 
     [ObservableProperty]
@@ -68,6 +80,9 @@ public partial class MainViewModel : ViewModelBase
     partial void OnSelectedNbaTeamChanged(NbaTeam? value)
     {
         if (_suppressChanges) return;
+        AlertTeamColorHex = value is not null
+            ? $"#{value.R:X2}{value.G:X2}{value.B:X2}"
+            : "#888888";
         _settingsService.Current.NbaTeamId = value?.Id;
         _settingsService.Save();
     }
@@ -102,6 +117,7 @@ public partial class MainViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ConnectCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RenameDeviceCommand))]
     private DiscoveredDevice? _selectedDevice;
 
     // ── Connection ────────────────────────────────────────────────────────────
@@ -175,6 +191,12 @@ public partial class MainViewModel : ViewModelBase
             ? Models.NbaTeams.All.FirstOrDefault(t => t.Id == cfg.NbaTeamId.Value)
             : null;
         _suppressChanges = false;
+
+        AlertTeamColorHex = SelectedNbaTeam is not null
+            ? $"#{SelectedNbaTeam.R:X2}{SelectedNbaTeam.G:X2}{SelectedNbaTeam.B:X2}"
+            : "#888888";
+
+        alertService.NextGameUpdated += OnNextGameUpdated;
 
         LaunchOnStartup = startupService.IsLaunchOnStartupEnabled();
         if (cfg.AlertEnabled) alertService.Start();
@@ -416,6 +438,80 @@ public partial class MainViewModel : ViewModelBase
     }
 
     private bool CanDeletePreset() => SelectedPreset is { IsBuiltIn: false };
+
+    // ── Auto-reconnect ────────────────────────────────────────────────────────
+
+    public async Task AutoReconnectAsync()
+    {
+        var cfg = _settingsService.Current;
+        if (string.IsNullOrEmpty(cfg.DeviceIp) || string.IsNullOrEmpty(cfg.DeviceId)) return;
+        var localKey = _settingsService.GetLocalKey();
+        if (string.IsNullOrEmpty(localKey)) return;
+
+        if (!DiscoveredDevices.Any(d => d.Ip == cfg.DeviceIp))
+        {
+            DiscoveredDevices.Add(new DiscoveredDevice(cfg.DeviceIp, cfg.DeviceId, "3.3")
+            {
+                FriendlyName = _settingsService.GetFriendlyName(cfg.DeviceIp)
+            });
+        }
+
+        StatusText = $"Reconnecting to {cfg.DeviceIp}…";
+        await RunBusyAsync(async () =>
+        {
+            await _deviceService.ConnectAsync(cfg.DeviceIp, cfg.DeviceId, localKey);
+            var state = await _deviceService.GetStateAsync();
+            LoadStateQuiet(state);
+            IsConnected = true;
+            StatusText  = $"Connected — {cfg.DeviceIp}";
+        });
+    }
+
+    // ── Rename device ─────────────────────────────────────────────────────────
+
+    [RelayCommand(CanExecute = nameof(CanRenameDevice))]
+    private async Task RenameDeviceAsync()
+    {
+        var device = SelectedDevice!;
+        var name   = await _dialogService.ShowInputAsync("Rename Device", $"Enter a label for {device.Ip}:");
+        if (string.IsNullOrWhiteSpace(name)) return;
+
+        name = name.Trim();
+        _settingsService.SetFriendlyName(device.Ip, name);
+        _settingsService.Save();
+
+        var updated = device with { FriendlyName = name };
+        var idx     = DiscoveredDevices.IndexOf(device);
+        if (idx >= 0) DiscoveredDevices[idx] = updated;
+        SelectedDevice = updated;
+    }
+
+    private bool CanRenameDevice() => SelectedDevice is not null;
+
+    // ── Clear saved device ────────────────────────────────────────────────────
+
+    [RelayCommand]
+    private void ClearSavedDevice()
+    {
+        _settingsService.Current.DeviceId           = null;
+        _settingsService.Current.DeviceIp           = null;
+        _settingsService.Current.EncryptedLocalKey  = null;
+        _settingsService.Save();
+        if (IsConnected) Disconnect();
+    }
+
+    // ── Next game update (called from background thread) ──────────────────────
+
+    private void OnNextGameUpdated()
+    {
+        var t    = _alertService.NextGameTime;
+        var text = t.HasValue ? $"Next: {t.Value:ddd MMM d, h:mm tt}" : "No upcoming games";
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher is not null && !dispatcher.CheckAccess())
+            dispatcher.Invoke(() => NextGameText = text);
+        else
+            NextGameText = text;
+    }
 
     // ── Theme ─────────────────────────────────────────────────────────────────
 

@@ -20,6 +20,8 @@ public class MainViewModelTests
     private MainViewModel CreateVm()
     {
         _settingsSvc.SetupGet(s => s.Current).Returns(new AppSettings());
+        _settingsSvc.Setup(s => s.GetLocalKey()).Returns((string?)null);
+        _settingsSvc.Setup(s => s.GetFriendlyName(It.IsAny<string>())).Returns((string?)null);
         _presetSvc.SetupGet(s => s.Presets).Returns([]);
         return new MainViewModel(
             _deviceSvc.Object,

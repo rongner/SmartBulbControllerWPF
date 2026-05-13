@@ -64,6 +64,12 @@ public class SettingsService : ServiceBase, ISettingsService
         Current.EncryptedLocalKey = Convert.ToBase64String(encrypted);
     }
 
+    public string? GetFriendlyName(string deviceIp) =>
+        Current.DeviceLabels.TryGetValue(deviceIp, out var name) ? name : null;
+
+    public void SetFriendlyName(string deviceIp, string name) =>
+        Current.DeviceLabels[deviceIp] = name;
+
     private AppSettings Load()
     {
         if (!File.Exists(_settingsPath)) return new AppSettings();

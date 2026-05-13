@@ -19,6 +19,9 @@ public class AppSettings
 
     // Startup
     public bool LaunchOnStartup { get; set; } = false;
+
+    // Device display names (IP → label)
+    public Dictionary<string, string> DeviceLabels { get; set; } = new();
 }
 
 public enum ThemePreference { System, Light, Dark }
